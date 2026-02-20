@@ -1,0 +1,148 @@
+@import "tailwindcss";
+
+/* ===== LIGHT THEME (default) ===== */
+:root {
+  --bc-bg: #f9f9f9;
+  --bc-bg-overlay: rgba(0, 0, 0, 0.45);
+  --bc-card: #ffffff;
+  --bc-border: #d3d6da;
+  --bc-border-active: #878a8c;
+  --bc-text: #1a1a1b;
+  --bc-text-muted: #787c7e;
+  --bc-key-default: #d3d6da;
+  --bc-key-text: #1a1a1b;
+  --bc-miss: #787c7e;
+  --bc-miss-text: #ffffff;
+}
+
+/* ===== DARK THEME ===== */
+html.dark {
+  --bc-bg: #111111;
+  --bc-bg-overlay: rgba(0, 0, 0, 0.75);
+  --bc-card: #1a1a1b;
+  --bc-border: #3a3a3c;
+  --bc-border-active: #818384;
+  --bc-text: #ffffff;
+  --bc-text-muted: #818384;
+  --bc-key-default: #818384;
+  --bc-key-text: #ffffff;
+  --bc-miss: #3a3a3c;
+  --bc-miss-text: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--bc-bg);
+  color: var(--bc-text);
+  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+/* ===== ANIMATIONS ===== */
+
+@keyframes flip-in {
+  0% {
+    transform: rotateX(0deg);
+  }
+  50% {
+    transform: rotateX(-90deg);
+  }
+  100% {
+    transform: rotateX(0deg);
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 50%, 90% {
+    transform: translateX(-6px);
+  }
+  30%, 70% {
+    transform: translateX(6px);
+  }
+}
+
+@keyframes bounce-in {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ===== UTILITY CLASSES ===== */
+
+.animate-flip {
+  animation: flip-in 0.5s ease forwards;
+}
+
+.animate-pop {
+  animation: pop 0.1s ease;
+}
+
+.animate-shake {
+  animation: shake 0.5s ease;
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.25s ease forwards;
+}
+
+/* ===== SCROLLBAR ===== */
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bc-border);
+  border-radius: 2px;
+}
