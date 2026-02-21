@@ -2,67 +2,57 @@
 
 import { useEffect, useRef } from 'react'
 
-interface Particle {
+// 彩色纸屑片（矩形，带旋转）
+interface Confetti {
   x: number
   y: number
   vx: number
   vy: number
   alpha: number
   color: string
-  size: number
+  w: number       // 宽
+  h: number       // 高
+  rotation: number
+  rotSpeed: number
   gravity: number
-}
-
-interface Rocket {
-  x: number
-  y: number
-  vy: number
-  targetY: number
-  color: string
-  exploded: boolean
-  trail: { x: number; y: number; alpha: number }[]
-  particles: Particle[]
+  drag: number
 }
 
 const COLORS = [
-  '#ff4d4d', '#ff9933', '#ffdd00', '#33cc33',
+  '#ff4d4d', '#ff9933', '#ffdd00', '#4caf50',
   '#33bbff', '#9966ff', '#ff66cc', '#ffffff',
-  '#ff6633', '#66ffcc',
+  '#ff6633', '#66ffcc', '#f472b6', '#a3e635',
 ]
 
-function randomBetween(a: number, b: number) {
+function rand(a: number, b: number) {
   return a + Math.random() * (b - a)
 }
 
-function createRocket(canvasWidth: number, canvasHeight: number): Rocket {
-  const color = COLORS[Math.floor(Math.random() * COLORS.length)]
-  return {
-    x: randomBetween(canvasWidth * 0.2, canvasWidth * 0.8),
-    y: canvasHeight,
-    vy: randomBetween(-18, -12),
-    targetY: randomBetween(canvasHeight * 0.1, canvasHeight * 0.45),
-    color,
-    exploded: false,
-    trail: [],
-    particles: [],
-  }
-}
-
-function explode(rocket: Rocket) {
-  rocket.exploded = true
-  const count = Math.floor(randomBetween(80, 130))
+/** 从指定位置向扇形方向发射一批纸屑 */
+function burst(
+  particles: Confetti[],
+  x: number,
+  y: number,
+  angleMin: number, // 弧度，发射扇区最小角
+  angleMax: number, // 弧度，发射扇区最大角
+  count: number,
+) {
   for (let i = 0; i < count; i++) {
-    const angle = (Math.PI * 2 * i) / count + randomBetween(-0.1, 0.1)
-    const speed = randomBetween(1.5, 7)
-    rocket.particles.push({
-      x: rocket.x,
-      y: rocket.y,
+    const angle = rand(angleMin, angleMax)
+    const speed = rand(6, 16)
+    particles.push({
+      x,
+      y,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
       alpha: 1,
-      color: rocket.color,
-      size: randomBetween(2, 4),
-      gravity: randomBetween(0.06, 0.12),
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      w: rand(10, 18),
+      h: rand(5, 10),
+      rotation: rand(0, Math.PI * 2),
+      rotSpeed: rand(-0.08, 0.08),
+      gravity: rand(0.08, 0.15),
+      drag: rand(0.985, 0.995),
     })
   }
 }
@@ -75,11 +65,11 @@ interface FireworksProps {
 export default function Fireworks({ active, duration = 3500 }: FireworksProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useRef<{
-    rockets: Rocket[]
+    particles: Confetti[]
     frameId: number
     startTime: number
-    launchInterval: ReturnType<typeof setInterval> | null
-  }>({ rockets: [], frameId: 0, startTime: 0, launchInterval: null })
+    timers: ReturnType<typeof setTimeout>[]
+  }>({ particles: [], frameId: 0, startTime: 0, timers: [] })
 
   useEffect(() => {
     if (!active) return
@@ -95,101 +85,70 @@ export default function Fireworks({ active, duration = 3500 }: FireworksProps) {
     resize()
     window.addEventListener('resize', resize)
 
-    const state = stateRef.current
-    state.rockets = []
-    state.startTime = performance.now()
+    const st = stateRef.current
+    st.particles = []
+    st.timers = []
+    st.startTime = performance.now()
 
-    // 每隔一段时间发射一枚火箭
-    let launchCount = 0
-    const launch = () => {
-      if (performance.now() - state.startTime > duration - 800) return
-      state.rockets.push(createRocket(canvas.width, canvas.height))
-      launchCount++
-    }
-    // 立即发射第一批
-    for (let i = 0; i < 3; i++) {
-      setTimeout(() => launch(), i * 180)
-    }
-    state.launchInterval = setInterval(() => {
-      launch()
-      if (Math.random() > 0.5) launch() // 偶尔同时发两枚
-    }, 380)
+    const W = () => canvas.width
+    const H = () => canvas.height
+
+    // 左炮：从左边缘，向右上方宽扇形喷射
+    // 右炮：从右边缘，向左上方宽扇形喷射
+    const fireLeft = () => burst(st.particles, 0, H() * 0.7, -1.4, -0.15, 60)
+    const fireRight = () => burst(st.particles, W(), H() * 0.7, -Math.PI + 0.15, -Math.PI + 1.4, 60)
+
+    const fireBoth = () => { fireLeft(); fireRight() }
+
+    // 只发射一次，粒子数量更多、速度更快
+    fireBoth()
 
     const draw = (now: number) => {
-      const elapsed = now - state.startTime
-      const fadeOut = Math.max(0, Math.min(1, (duration - elapsed) / 600))
+      const elapsed = now - st.startTime
+      const fadeOut = Math.max(0, Math.min(1, (duration - elapsed) / 800))
 
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      for (let ri = state.rockets.length - 1; ri >= 0; ri--) {
-        const rocket = state.rockets[ri]
-
-        if (!rocket.exploded) {
-          // 轨迹
-          rocket.trail.push({ x: rocket.x, y: rocket.y, alpha: 1 })
-          if (rocket.trail.length > 12) rocket.trail.shift()
-          for (let ti = 0; ti < rocket.trail.length; ti++) {
-            const t = rocket.trail[ti]
-            t.alpha *= 0.82
-            ctx.globalAlpha = t.alpha * fadeOut
-            ctx.fillStyle = rocket.color
-            ctx.beginPath()
-            ctx.arc(t.x, t.y, 2, 0, Math.PI * 2)
-            ctx.fill()
-          }
-
-          // 火箭主体
-          ctx.globalAlpha = fadeOut
-          ctx.fillStyle = rocket.color
-          ctx.beginPath()
-          ctx.arc(rocket.x, rocket.y, 3, 0, Math.PI * 2)
-          ctx.fill()
-
-          rocket.y += rocket.vy
-          rocket.vy += 0.3 // 重力减速
-
-          if (rocket.y <= rocket.targetY) {
-            explode(rocket)
-          }
-        } else {
-          // 粒子
-          let alive = false
-          for (const p of rocket.particles) {
-            if (p.alpha < 0.02) continue
-            alive = true
-            ctx.globalAlpha = p.alpha * fadeOut
-            ctx.fillStyle = p.color
-            ctx.beginPath()
-            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-            ctx.fill()
-
-            p.x += p.vx
-            p.y += p.vy
-            p.vy += p.gravity
-            p.vx *= 0.97
-            p.alpha *= 0.94
-            p.size *= 0.98
-          }
-          if (!alive) {
-            state.rockets.splice(ri, 1)
-          }
+      for (let i = st.particles.length - 1; i >= 0; i--) {
+        const p = st.particles[i]
+        if (p.alpha < 0.02) {
+          st.particles.splice(i, 1)
+          continue
         }
+
+        // 更新物理
+        p.vx *= p.drag
+        p.vy += p.gravity
+        p.vy *= p.drag
+        p.x += p.vx
+        p.y += p.vy
+        p.rotation += p.rotSpeed
+        p.alpha *= 0.988
+
+        // 绘制旋转矩形
+        ctx.save()
+        ctx.globalAlpha = p.alpha * fadeOut
+        ctx.fillStyle = p.color
+        ctx.translate(p.x, p.y)
+        ctx.rotate(p.rotation)
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h)
+        ctx.restore()
       }
 
       ctx.globalAlpha = 1
 
-      if (elapsed < duration) {
-        state.frameId = requestAnimationFrame(draw)
+      if (elapsed < duration || st.particles.length > 0) {
+        st.frameId = requestAnimationFrame(draw)
       } else {
         ctx.clearRect(0, 0, canvas.width, canvas.height)
       }
     }
 
-    state.frameId = requestAnimationFrame(draw)
+    st.frameId = requestAnimationFrame(draw)
 
     return () => {
-      cancelAnimationFrame(state.frameId)
-      if (state.launchInterval) clearInterval(state.launchInterval)
+      cancelAnimationFrame(st.frameId)
+      st.timers.forEach(clearTimeout)
       window.removeEventListener('resize', resize)
       ctx.clearRect(0, 0, canvas.width, canvas.height)
     }

@@ -9,6 +9,7 @@ import {
   isValidGuess,
   type GuessResult,
 } from '../lib/game'
+import DiffPanel from './DiffPanel'
 import EliminatorPanel, { INIT_CELLS } from './EliminatorPanel'
 import Fireworks from './Fireworks'
 import GuessRow from './GuessRow'
@@ -89,6 +90,7 @@ export default function GameBoard() {
   const [theme, setTheme] = useState<Theme>('light')
   const [showEliminator, setShowEliminator] = useState(false)
   const [elimCells, setElimCells] = useState<number[][]>(INIT_CELLS)
+  const [selectedRows, setSelectedRows] = useState<number[]>([])
 
   const { secret, guesses, currentInput, gameStatus, revealingRow } = state
 
@@ -140,13 +142,34 @@ export default function GameBoard() {
       setTimeout(() => setShakingRow(null), 600)
       return
     }
+    // 命中数=0时，自动将4个位置对应的数字在排除器中标为"已排除"
+    const result = checkGuess(secret, currentInput)
+    if (result.bulls === 0) {
+      setElimCells((prev) => {
+        const next = prev.map((r) => [...r])
+        currentInput.forEach((digit, col) => {
+          const row = parseInt(digit)
+          if (next[row][col] === 0) next[row][col] = 1 // 不覆盖已手动确认的格子
+        })
+        return next
+      })
+    }
     dispatch({ type: 'SUBMIT_GUESS' })
-  }, [currentInput, guesses.length])
+  }, [currentInput, guesses.length, secret])
 
   const handleRestart = useCallback(() => {
     setShowResult(false)
     setElimCells(INIT_CELLS())
+    setSelectedRows([])
     dispatch({ type: 'RESTART' })
+  }, [])
+
+  const handleRowSelect = useCallback((rowIndex: number) => {
+    setSelectedRows((prev) => {
+      if (prev.includes(rowIndex)) return prev.filter((i) => i !== rowIndex)
+      if (prev.length >= 2) return [prev[1], rowIndex]
+      return [...prev, rowIndex]
+    })
   }, [])
 
   const handleElimCellClick = useCallback((row: number, col: number) => {
@@ -173,7 +196,7 @@ export default function GameBoard() {
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent | KeyboardEvent) => {
       if (showHelp || showResult) return
-      if (e.isComposing) return // 忽略 IME 组合输入中的事件
+      if ('isComposing' in e && e.isComposing) return // 忽略 IME 组合输入中的事件
 
       // 字母行数字键 Digit0–Digit9 / 小键盘 Numpad0–Numpad9
       if (/^Digit[0-9]$/.test(e.code)) {
@@ -320,15 +343,28 @@ export default function GameBoard() {
 
       {/* ===== 游戏区域 ===== */}
       <main className="flex flex-col items-center px-4 pt-6 pb-2 gap-2">
-        {/* 已完成的猜测行 */}
-        {guesses.map((guess, rowIndex) => (
-          <GuessRow
-            key={rowIndex}
-            guess={guess}
-            isRevealing={revealingRow === rowIndex}
-            isShaking={shakingRow === rowIndex}
-          />
-        ))}
+        {/* 已完成的猜测行（可点击选中进行对比） */}
+        {guesses.map((guess, rowIndex) => {
+          const selOrder = selectedRows.indexOf(rowIndex) // -1 未选, 0 第一选, 1 第二选
+          const borderColor = selOrder === 0 ? '#f97316' : selOrder === 1 ? '#818cf8' : 'transparent'
+          return (
+            <div
+              key={rowIndex}
+              onClick={() => handleRowSelect(rowIndex)}
+              className="cursor-pointer rounded-sm transition-all duration-150"
+              style={{
+                outline: selOrder >= 0 ? `2px solid ${borderColor}` : '2px solid transparent',
+                outlineOffset: '3px',
+              }}
+            >
+              <GuessRow
+                guess={guess}
+                isRevealing={revealingRow === rowIndex}
+                isShaking={shakingRow === rowIndex}
+              />
+            </div>
+          )
+        })}
 
         {/* 当前输入行（游戏进行中才显示） */}
         {gameStatus === 'playing' && (
@@ -337,6 +373,17 @@ export default function GameBoard() {
             currentInput={currentInput}
             isShaking={shakingRow === currentRowIndex}
           />
+        )}
+
+        {/* 对比面板：选中两行后显示 */}
+        {selectedRows.length === 2 && (
+          <div className="w-full max-w-sm mt-2">
+            <DiffPanel
+              rowA={{ index: selectedRows[0], guess: guesses[selectedRows[0]] }}
+              rowB={{ index: selectedRows[1], guess: guesses[selectedRows[1]] }}
+              onClear={() => setSelectedRows([])}
+            />
+          </div>
         )}
       </main>
 
