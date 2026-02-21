@@ -389,7 +389,7 @@ export default function GameBoard() {
 
       {/* ===== 数字键盘 ===== */}
       <footer
-        className="flex items-end justify-center px-4 pb-6 pt-4 mt-2 gap-4"
+        className="relative flex justify-center px-4 pb-6 pt-4 mt-2"
         style={{ borderTop: '1px solid var(--bc-border)' }}
       >
         <NumberPad
@@ -400,21 +400,21 @@ export default function GameBoard() {
           disabled={isDisabled}
         />
 
-        {/* 排除器入口按钮 */}
+        {/* 辅助计数器入口按钮：绝对定位，不影响 NumberPad 布局 */}
         <button
-          onClick={() => setShowEliminator(true)}
-          aria-label="打开排除器"
-          className="flex flex-col items-center gap-1 pb-1 transition-opacity duration-200 hover:opacity-70 cursor-pointer select-none"
+          onClick={() => setShowEliminator((v) => !v)}
+          aria-label={showEliminator ? '收起辅助计数器' : '打开辅助计数器'}
+          className="absolute right-4 bottom-6 flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all duration-200 hover:opacity-80 cursor-pointer select-none"
           style={{ color: showEliminator ? '#538d4e' : 'var(--bc-text-muted)' }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
             fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="3" y="3" width="7" height="7" rx="1" />
             <rect x="14" y="3" width="7" height="7" rx="1" />
             <rect x="3" y="14" width="7" height="7" rx="1" />
             <rect x="14" y="14" width="7" height="7" rx="1" />
           </svg>
-          <span className="text-xs font-medium">排除器</span>
+          <span className="text-sm font-medium">辅助计数器</span>
         </button>
       </footer>
 

@@ -27,7 +27,6 @@ export default function GuessRow({
   const cells: { digit: string; state: CellState }[] = Array.from({ length: 4 }, (_, i) => {
     if (guess) {
       const digit = guess.digits[i] ?? ''
-      // 全部命中时变绿，否则保持 active 样式不变色
       const state: CellState = guess.bulls === 4 ? 'bull' : 'active'
       return { digit, state }
     }
@@ -39,9 +38,7 @@ export default function GuessRow({
   })
 
   return (
-    <div
-      className={['flex items-center gap-2', isShaking ? 'animate-shake' : ''].filter(Boolean).join(' ')}
-    >
+    <div className={['relative', isShaking ? 'animate-shake' : ''].filter(Boolean).join(' ')}>
       {/* 4个数字格子 */}
       <div className="flex gap-2">
         {cells.map((cell, i) => (
@@ -55,19 +52,20 @@ export default function GuessRow({
         ))}
       </div>
 
-      {/* 命中数区域：始终占位，防止偏移 */}
-      <div className="w-10 flex flex-col items-center justify-center">
-        {guess && (
-          <>
-            <span className="text-xs leading-none mb-0.5" style={{ color: 'var(--bc-text-muted)' }}>
-              命中数
-            </span>
-            <span className="text-xl font-bold leading-none" style={{ color: BULLS_COLORS[guess.bulls] }}>
-              {guess.bulls}
-            </span>
-          </>
-        )}
-      </div>
+      {/* 命中数：绝对定位到右侧，不占文档流空间 */}
+      {guess && (
+        <div
+          className="absolute top-1/2 -translate-y-1/2 flex items-center gap-1.5 whitespace-nowrap"
+          style={{ left: 'calc(100% + 10px)' }}
+        >
+          <span className="text-sm font-medium" style={{ color: 'var(--bc-text-muted)' }}>
+            命中数
+          </span>
+          <span className="text-xl font-bold" style={{ color: BULLS_COLORS[guess.bulls] }}>
+            {guess.bulls}
+          </span>
+        </div>
+      )}
     </div>
   )
 }

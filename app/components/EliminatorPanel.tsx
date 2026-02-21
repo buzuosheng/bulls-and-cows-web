@@ -45,7 +45,7 @@ export default function EliminatorPanel({
           style={{ borderBottom: '1px solid var(--bc-border)' }}
         >
           <span className="text-base font-bold tracking-wide select-none" style={{ color: 'var(--bc-text)' }}>
-            排除器
+            辅助计数器
           </span>
           <button
             onClick={onClose}

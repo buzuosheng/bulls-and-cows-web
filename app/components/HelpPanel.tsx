@@ -38,12 +38,12 @@ function ExampleGuessRow({
             </div>
           ))}
         </div>
-        {/* 命中数区域 */}
-        <div className="w-10 flex flex-col items-center justify-center">
-          <span className="text-xs leading-none mb-0.5" style={{ color: 'var(--bc-text-muted)' }}>
+        {/* 命中数区域：左右排列 */}
+        <div className="flex items-center gap-1.5 ml-2">
+          <span className="text-sm font-medium" style={{ color: 'var(--bc-text-muted)' }}>
             命中数
           </span>
-          <span className="text-xl font-bold leading-none" style={{ color: BULLS_COLORS[bulls] }}>
+          <span className="text-xl font-bold" style={{ color: BULLS_COLORS[bulls] }}>
             {bulls}
           </span>
         </div>
