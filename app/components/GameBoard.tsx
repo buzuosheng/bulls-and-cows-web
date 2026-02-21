@@ -9,6 +9,7 @@ import {
   isValidGuess,
   type GuessResult,
 } from '../lib/game'
+import EliminatorPanel, { INIT_CELLS } from './EliminatorPanel'
 import Fireworks from './Fireworks'
 import GuessRow from './GuessRow'
 import HelpPanel from './HelpPanel'
@@ -86,6 +87,8 @@ export default function GameBoard() {
   const [showResult, setShowResult] = useState(false)
   const [showFireworks, setShowFireworks] = useState(false)
   const [theme, setTheme] = useState<Theme>('light')
+  const [showEliminator, setShowEliminator] = useState(false)
+  const [elimCells, setElimCells] = useState<number[][]>(INIT_CELLS)
 
   const { secret, guesses, currentInput, gameStatus, revealingRow } = state
 
@@ -142,7 +145,16 @@ export default function GameBoard() {
 
   const handleRestart = useCallback(() => {
     setShowResult(false)
+    setElimCells(INIT_CELLS())
     dispatch({ type: 'RESTART' })
+  }, [])
+
+  const handleElimCellClick = useCallback((row: number, col: number) => {
+    setElimCells((prev) => {
+      const next = prev.map((r) => [...r])
+      next[row][col] = (next[row][col] + 1) % 3
+      return next
+    })
   }, [])
 
   const toggleTheme = useCallback(() => {
@@ -330,7 +342,7 @@ export default function GameBoard() {
 
       {/* ===== 数字键盘 ===== */}
       <footer
-        className="flex justify-center px-4 pb-6 pt-4 mt-2"
+        className="flex items-end justify-center px-4 pb-6 pt-4 mt-2 gap-4"
         style={{ borderTop: '1px solid var(--bc-border)' }}
       >
         <NumberPad
@@ -340,7 +352,33 @@ export default function GameBoard() {
           inputFull={currentInput.length === 4}
           disabled={isDisabled}
         />
+
+        {/* 排除器入口按钮 */}
+        <button
+          onClick={() => setShowEliminator(true)}
+          aria-label="打开排除器"
+          className="flex flex-col items-center gap-1 pb-1 transition-opacity duration-200 hover:opacity-70 cursor-pointer select-none"
+          style={{ color: showEliminator ? '#538d4e' : 'var(--bc-text-muted)' }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="3" width="7" height="7" rx="1" />
+            <rect x="3" y="14" width="7" height="7" rx="1" />
+            <rect x="14" y="14" width="7" height="7" rx="1" />
+          </svg>
+          <span className="text-xs font-medium">排除器</span>
+        </button>
       </footer>
+
+      {/* ===== 排除器侧边栏 ===== */}
+      <EliminatorPanel
+        isOpen={showEliminator}
+        onClose={() => setShowEliminator(false)}
+        cells={elimCells}
+        onCellClick={handleElimCellClick}
+        onReset={() => setElimCells(INIT_CELLS())}
+      />
 
       {/* ===== 烟花庆祝 ===== */}
       <Fireworks active={showFireworks} duration={3500} />
