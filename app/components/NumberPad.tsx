@@ -14,7 +14,7 @@ const DIGIT_ROWS = [
   ['1', '2', '3'],
 ]
 
-const BTN = 'w-16 h-16 rounded-md font-bold transition-all duration-200 cursor-pointer active:scale-95 select-none disabled:opacity-50 disabled:cursor-not-allowed'
+const BTN = 'w-14 h-14 sm:w-16 sm:h-16 rounded-md font-bold transition-all duration-200 cursor-pointer active:scale-95 select-none disabled:opacity-50 disabled:cursor-not-allowed'
 
 // 阻止按钮点击时抢走焦点，使游戏容器保持焦点以继续接受键盘输入
 const noFocusSteal = (e: React.MouseEvent) => e.preventDefault()

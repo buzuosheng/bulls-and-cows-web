@@ -1,5 +1,7 @@
 'use client'
 
+import CreditFooter from './CreditFooter'
+
 const BULLS_COLORS: Record<number, string> = {
   0: '#9ca3af',
   1: '#f59e0b',
@@ -173,6 +175,9 @@ export default function HelpPanel({ isOpen, onClose }: HelpPanelProps) {
           </button>
         </div>
       </div>
+
+      {/* 规则页最底部：署名与源码链接 */}
+      <CreditFooter />
     </div>
   )
 }

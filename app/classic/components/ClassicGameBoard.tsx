@@ -245,7 +245,7 @@ export default function ClassicGameBoard() {
 
       {/* ===== HEADER ===== */}
       <header
-        className="relative z-10 flex items-center justify-between px-4 py-3 max-w-lg mx-auto w-full"
+        className="relative z-10 flex items-center justify-between px-3 sm:px-4 py-3 max-w-lg mx-auto w-full"
         style={{ borderBottom: '1px solid var(--bc-border)' }}
       >
         {/* 左：返回首页 + ? 帮助 */}
@@ -321,7 +321,7 @@ export default function ClassicGameBoard() {
       <ClassicHelpPanel isOpen={showHelp} onClose={() => setShowHelp(false)} />
 
       {/* ===== 游戏区域 ===== */}
-      <main className="flex flex-col items-center px-4 pt-6 pb-2 gap-2">
+      <main className="flex flex-col items-center px-3 sm:px-4 pt-4 sm:pt-6 pb-2 gap-2">
         {guesses.map((guess, rowIndex) => {
           const selOrder = selectedRows.indexOf(rowIndex)
           const borderColor = selOrder === 0 ? '#f97316' : selOrder === 1 ? '#818cf8' : 'transparent'
@@ -365,8 +365,11 @@ export default function ClassicGameBoard() {
 
       {/* ===== 数字键盘 ===== */}
       <footer
-        className="flex flex-col items-center px-4 pb-6 pt-4 mt-2 gap-4"
-        style={{ borderTop: '1px solid var(--bc-border)' }}
+        className="flex flex-col items-center px-3 sm:px-4 pt-4 mt-2 gap-4 max-w-lg mx-auto w-full"
+        style={{
+          borderTop: '1px solid var(--bc-border)',
+          paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
+        }}
       >
         <NumberPad
           onDigit={handleDigit}

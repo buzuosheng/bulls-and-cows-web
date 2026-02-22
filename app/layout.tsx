@@ -23,6 +23,13 @@ export const metadata: Metadata = {
   description: '4位数字猜谜游戏。每次猜测后，系统会告诉你命中数（数字和位置都正确）。尝试在最少次数内猜出答案！',
 }
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: 'cover' as const,
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{

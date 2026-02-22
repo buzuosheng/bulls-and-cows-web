@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import CreditFooter from './components/CreditFooter'
 
 type Theme = 'dark' | 'light'
 
@@ -213,10 +214,8 @@ export default function HomePage() {
         </div>
       </main>
 
-      {/* ===== FOOTER ===== */}
-      <footer className="py-4 text-center" style={{ color: 'var(--bc-text-muted)' }}>
-        <p className="text-xs">Bulls &amp; Cows — 数字猜谜</p>
-      </footer>
+      {/* ===== 页面最底部：署名与源码链接 ===== */}
+      <CreditFooter />
     </div>
   )
 }

@@ -27,8 +27,8 @@ export default function DigitCell({
   return (
     <div
       className={[
-        'w-16 h-16 flex items-center justify-center',
-        'text-3xl font-bold rounded-sm select-none',
+        'w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center',
+        'text-2xl sm:text-3xl font-bold rounded-sm select-none',
         stateStyles[state],
         shouldFlip ? 'animate-flip' : '',
       ]

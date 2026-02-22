@@ -27,14 +27,25 @@ export default function EliminatorPanel({
 }: EliminatorPanelProps) {
   return (
     <>
+      {/* 移动端/平板遮罩：仅 lg 以下显示，点击关闭侧边栏；桌面端不显示遮罩 */}
+      {isOpen && (
+        <div
+          role="button"
+          tabIndex={-1}
+          aria-label="点击关闭辅助计数器"
+          onClick={onClose}
+          onKeyDown={(e) => e.key === 'Escape' && onClose()}
+          className="fixed inset-0 z-30 transition-opacity duration-300 lg:invisible lg:pointer-events-none"
+          style={{ background: 'var(--bc-bg-overlay)' }}
+        />
+      )}
 
       {/* 侧边栏本体 */}
       <div
-        className="fixed right-0 top-0 h-full z-40 flex flex-col shadow-2xl transition-transform duration-300 ease-in-out"
+        className="fixed right-0 top-0 h-full z-40 flex flex-col shadow-2xl transition-transform duration-300 ease-in-out w-[310px] max-w-[85vw] sm:max-w-none"
         style={{
           background: 'var(--bc-bg)',
           borderLeft: '1px solid var(--bc-border)',
-          width: '310px',
           transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
         }}
         onClick={(e) => e.stopPropagation()}

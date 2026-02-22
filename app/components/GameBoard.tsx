@@ -252,7 +252,7 @@ export default function GameBoard() {
 
       {/* ===== HEADER ===== */}
       <header
-        className="relative z-10 flex items-center justify-between px-4 py-3 max-w-lg mx-auto w-full"
+        className="relative z-10 flex items-center justify-between px-3 sm:px-4 py-3 max-w-lg mx-auto w-full"
         style={{ borderBottom: '1px solid var(--bc-border)' }}
       >
         {/* 左：返回首页 + ? 帮助 */}
@@ -350,7 +350,7 @@ export default function GameBoard() {
       <HelpPanel isOpen={showHelp} onClose={() => setShowHelp(false)} />
 
       {/* ===== 游戏区域 ===== */}
-      <main className="flex flex-col items-center px-4 pt-6 pb-2 gap-2">
+      <main className="flex flex-col items-center px-3 sm:px-4 pt-4 sm:pt-6 pb-2 gap-2">
         {/* 已完成的猜测行（可点击选中进行对比） */}
         {guesses.map((guess, rowIndex) => {
           const selOrder = selectedRows.indexOf(rowIndex) // -1 未选, 0 第一选, 1 第二选
@@ -397,8 +397,11 @@ export default function GameBoard() {
 
       {/* ===== 数字键盘 ===== */}
       <footer
-        className="flex flex-col items-center px-4 pb-6 pt-4 mt-2 gap-4"
-        style={{ borderTop: '1px solid var(--bc-border)' }}
+        className="flex flex-col items-center px-3 sm:px-4 pt-4 mt-2 gap-4 max-w-lg mx-auto w-full"
+        style={{
+          borderTop: '1px solid var(--bc-border)',
+          paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
+        }}
       >
         <NumberPad
           onDigit={handleDigit}
