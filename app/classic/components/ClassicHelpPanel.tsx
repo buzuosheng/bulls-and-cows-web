@@ -8,15 +8,19 @@ const BULLS_COLORS: Record<number, string> = {
   4: '#538d4e',
 }
 
-/** 复刻真实的 GuessRow 外观，用于规则说明 */
+const COWS_COLOR = '#b59f3b'
+
+/** 复刻真实的 ClassicGuessRow 外观，用于规则说明 */
 function ExampleGuessRow({
   digits,
   bulls,
+  cows,
   allCorrect = false,
   description,
 }: {
   digits: string[]
   bulls: number
+  cows: number
   allCorrect?: boolean
   description: string
 }) {
@@ -26,7 +30,6 @@ function ExampleGuessRow({
 
   return (
     <div className="flex flex-col items-center gap-2 my-5">
-      {/* 行本体：格子 + 命中数（和游戏里完全一致的布局） */}
       <div className="flex items-center gap-2">
         <div className="flex gap-2">
           {digits.map((d, i) => (
@@ -38,17 +41,18 @@ function ExampleGuessRow({
             </div>
           ))}
         </div>
-        {/* 命中数区域：左右排列 */}
-        <div className="flex items-center gap-1.5 ml-2">
-          <span className="text-sm font-medium" style={{ color: 'var(--bc-text-muted)' }}>
-            命中数
-          </span>
-          <span className="text-xl font-bold" style={{ color: BULLS_COLORS[bulls] }}>
-            {bulls}
-          </span>
+        {/* B / C 结果区域 */}
+        <div className="flex flex-col gap-0.5 ml-2">
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm font-medium" style={{ color: 'var(--bc-text-muted)' }}>B:</span>
+            <span className="text-xl font-bold" style={{ color: BULLS_COLORS[bulls] }}>{bulls}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm font-medium" style={{ color: 'var(--bc-text-muted)' }}>C:</span>
+            <span className="text-xl font-bold" style={{ color: COWS_COLOR }}>{cows}</span>
+          </div>
         </div>
       </div>
-      {/* 描述文字 */}
       <p className="text-base text-center" style={{ color: 'var(--bc-text-muted)' }}>
         {description}
       </p>
@@ -56,12 +60,12 @@ function ExampleGuessRow({
   )
 }
 
-interface HelpPanelProps {
+interface ClassicHelpPanelProps {
   isOpen: boolean
   onClose: () => void
 }
 
-export default function HelpPanel({ isOpen, onClose }: HelpPanelProps) {
+export default function ClassicHelpPanel({ isOpen, onClose }: ClassicHelpPanelProps) {
   return (
     <div
       className="fixed inset-0 z-50 flex flex-col transition-transform duration-500 ease-in-out"
@@ -116,12 +120,17 @@ export default function HelpPanel({ isOpen, onClose }: HelpPanelProps) {
           </p>
 
           <div className="w-full border-t pt-6" style={{ borderColor: 'var(--bc-border)' }}>
-            <p className="text-base mb-1" style={{ color: 'var(--bc-text)' }}>
-              每次猜测后，右侧显示<strong>命中数</strong>
+            <p className="text-base mb-2" style={{ color: 'var(--bc-text)' }}>
+              每次猜测后，右侧显示 <strong>B</strong>（Bulls）和 <strong>C</strong>（Cows）
             </p>
-            <p className="text-sm mb-2" style={{ color: 'var(--bc-text-muted)' }}>
-              命中 = 数字正确 且 位置正确
-            </p>
+            <div className="flex flex-col gap-1 mb-4">
+              <p className="text-sm" style={{ color: 'var(--bc-text-muted)' }}>
+                <strong style={{ color: '#538d4e' }}>B (Bull)</strong> = 数字正确 且 位置正确
+              </p>
+              <p className="text-sm" style={{ color: 'var(--bc-text-muted)' }}>
+                <strong style={{ color: COWS_COLOR }}>C (Cow)</strong> = 数字在答案中，但位置错误
+              </p>
+            </div>
             <p className="text-sm mb-1" style={{ color: 'var(--bc-text-muted)' }}>
               格子本身不会变色
             </p>
@@ -134,13 +143,22 @@ export default function HelpPanel({ isOpen, onClose }: HelpPanelProps) {
             <ExampleGuessRow
               digits={['3', '8', '1', '5']}
               bulls={1}
-              description="5 位置正确 — 命中 1 位"
+              cows={1}
+              description="5 位置正确（B=1），3 在答案中但位置错（C=1）"
+            />
+
+            <ExampleGuessRow
+              digits={['2', '0', '7', '4']}
+              bulls={1}
+              cows={0}
+              description="7 位置正确（B=1），其余数字均不在答案中（C=0）"
             />
 
             <ExampleGuessRow
               digits={['6', '1', '9', '3']}
               bulls={0}
-              description="无数字位置正确 — 命中 0 位"
+              cows={2}
+              description="无位置正确（B=0），9 和 3 在答案中但位置错（C=2）"
             />
           </div>
 
@@ -149,12 +167,13 @@ export default function HelpPanel({ isOpen, onClose }: HelpPanelProps) {
             style={{ borderColor: 'var(--bc-border)' }}
           >
             <p className="text-base mb-4" style={{ color: 'var(--bc-text)' }}>
-              命中数为 <strong style={{ color: '#538d4e' }}>4</strong> 时，四位全中，格子全部变绿
+              B = <strong style={{ color: '#538d4e' }}>4</strong> 时，四位全中，格子全部变绿
             </p>
 
             <ExampleGuessRow
               digits={['9', '3', '7', '5']}
               bulls={4}
+              cows={0}
               allCorrect
               description="四位全中 — 游戏胜利！🎉"
             />

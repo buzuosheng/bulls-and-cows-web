@@ -4,25 +4,25 @@ import Link from 'next/link'
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import {
   MAX_ATTEMPTS,
-  checkGuess,
+  checkGuessClassic,
   generateSecret,
   getScore,
   isValidGuess,
-  type GuessResult,
-} from '../lib/game'
-import DiffPanel from './DiffPanel'
-import EliminatorPanel, { INIT_CELLS } from './EliminatorPanel'
-import Fireworks from './Fireworks'
-import GuessRow from './GuessRow'
-import HelpPanel from './HelpPanel'
-import NumberPad from './NumberPad'
-import ResultModal from './ResultModal'
+  type ClassicGuessResult,
+} from '../../lib/game'
+import EliminatorPanel, { INIT_CELLS } from '../../components/EliminatorPanel'
+import Fireworks from '../../components/Fireworks'
+import NumberPad from '../../components/NumberPad'
+import ResultModal from '../../components/ResultModal'
+import ClassicDiffPanel from './ClassicDiffPanel'
+import ClassicGuessRow from './ClassicGuessRow'
+import ClassicHelpPanel from './ClassicHelpPanel'
 
 type Theme = 'dark' | 'light'
 
 interface GameState {
   secret: string[]
-  guesses: GuessResult[]
+  guesses: ClassicGuessResult[]
   currentInput: string[]
   gameStatus: 'playing' | 'won' | 'lost'
   revealingRow: number | null
@@ -31,7 +31,7 @@ interface GameState {
 type Action =
   | { type: 'ADD_DIGIT'; digit: string }
   | { type: 'DELETE_DIGIT' }
-  | { type: 'SUBMIT_GUESS' }
+  | { type: 'SUBMIT_GUESS'; result: ClassicGuessResult }
   | { type: 'SET_REVEALING'; row: number | null }
   | { type: 'RESTART' }
 
@@ -58,8 +58,7 @@ function reducer(state: GameState, action: Action): GameState {
     }
     case 'SUBMIT_GUESS': {
       if (state.gameStatus !== 'playing') return state
-      if (!isValidGuess(state.currentInput)) return state
-      const result = checkGuess(state.secret, state.currentInput)
+      const result = action.result
       const newGuesses = [...state.guesses, result]
       const won = result.bulls === 4
       const lost = !won && newGuesses.length >= MAX_ATTEMPTS
@@ -82,7 +81,7 @@ function reducer(state: GameState, action: Action): GameState {
   }
 }
 
-export default function GameBoard() {
+export default function ClassicGameBoard() {
   const [state, dispatch] = useReducer(reducer, undefined, createInitialState)
   const [showHelp, setShowHelp] = useState(false)
   const [shakingRow, setShakingRow] = useState<number | null>(null)
@@ -113,7 +112,6 @@ export default function GameBoard() {
     try { localStorage.setItem('bc-theme', theme) } catch { /* ignore */ }
   }, [theme])
 
-  // 翻转动画结束后清除 revealingRow
   useEffect(() => {
     if (revealingRow === null) return
     const timer = setTimeout(
@@ -123,7 +121,6 @@ export default function GameBoard() {
     return () => clearTimeout(timer)
   }, [revealingRow])
 
-  // 游戏结束后延迟弹出结果 & 胜利时放烟花
   useEffect(() => {
     if (gameStatus !== 'playing' && revealingRow === null) {
       if (gameStatus === 'won') {
@@ -152,19 +149,34 @@ export default function GameBoard() {
       setTimeout(() => setShakingRow(null), 600)
       return
     }
-    // 命中数=0时，自动将4个位置对应的数字在排除器中标为"已排除"
-    const result = checkGuess(secret, currentInput)
+    const result = checkGuessClassic(secret, currentInput)
+
+    // 自动排除逻辑（经典版）：
+    // bulls=0, cows=0 → 这4个数字均不在答案中，所有位置全部标为灰色
+    // bulls=0, cows>0 → 数字在答案中但位置不对，仅排除当前猜测位置
     if (result.bulls === 0) {
       setElimCells((prev) => {
         const next = prev.map((r) => [...r])
-        currentInput.forEach((digit, col) => {
-          const row = parseInt(digit)
-          if (next[row][col] === 0) next[row][col] = 1 // 不覆盖已手动确认的格子
-        })
+        if (result.cows === 0) {
+          // 4个数字全不在答案中，在所有位置标灰
+          currentInput.forEach((digit) => {
+            const row = parseInt(digit)
+            for (let col = 0; col < 4; col++) {
+              if (next[row][col] === 0) next[row][col] = 1
+            }
+          })
+        } else {
+          // 仅排除该数字在本次猜测的位置
+          currentInput.forEach((digit, col) => {
+            const row = parseInt(digit)
+            if (next[row][col] === 0) next[row][col] = 1
+          })
+        }
         return next
       })
     }
-    dispatch({ type: 'SUBMIT_GUESS' })
+
+    dispatch({ type: 'SUBMIT_GUESS', result })
   }, [currentInput, guesses.length, secret])
 
   const handleRestart = useCallback(() => {
@@ -194,21 +206,17 @@ export default function GameBoard() {
     setTheme((t) => (t === 'dark' ? 'light' : 'dark'))
   }, [])
 
-  // 隐藏的 input：让 Vimium 等浏览器插件认为页面有可编辑区域，自动进入 insert mode
   const hiddenInputRef = useRef<HTMLInputElement>(null)
 
-  // 挂载后聚焦隐藏 input（而非 div），Vimium 遇到 input 会自动放行键盘事件
   useEffect(() => {
     hiddenInputRef.current?.focus()
   }, [])
 
-  // 处理按键（绑在游戏容器的 onKeyDown 上）
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent | KeyboardEvent) => {
       if (showHelp || showResult) return
-      if ('isComposing' in e && e.isComposing) return // 忽略 IME 组合输入中的事件
+      if ('isComposing' in e && e.isComposing) return
 
-      // 字母行数字键 Digit0–Digit9 / 小键盘 Numpad0–Numpad9
       if (/^Digit[0-9]$/.test(e.code)) {
         e.preventDefault()
         handleDigit(e.code.slice(5))
@@ -216,7 +224,6 @@ export default function GameBoard() {
         e.preventDefault()
         handleDigit(e.code.slice(6))
       } else if (/^[0-9]$/.test(e.key)) {
-        // 兜底：通过 e.key 识别（e.code 不符合时）
         e.preventDefault()
         handleDigit(e.key)
       } else if (e.code === 'Backspace' || e.key === 'Backspace') {
@@ -238,11 +245,6 @@ export default function GameBoard() {
       className="flex flex-col overflow-hidden relative"
       onClick={() => hiddenInputRef.current?.focus()}
     >
-      {/*
-        隐藏的 input：解决 Vimium 等浏览器插件拦截键盘的问题。
-        Vimium 检测到 input 被聚焦时会自动进入 insert mode，放行所有按键给页面。
-        样式上完全不可见，不影响布局。
-      */}
       <input
         ref={hiddenInputRef}
         onKeyDown={handleKeyDown}
@@ -297,7 +299,7 @@ export default function GameBoard() {
           className="text-xl font-bold tracking-widest select-none"
           style={{ color: 'var(--bc-text)' }}
         >
-          简化版
+          经典版
         </h1>
 
         {/* 右：主题切换 */}
@@ -309,19 +311,8 @@ export default function GameBoard() {
           style={{ color: 'var(--bc-text-muted)' }}
         >
           {theme === 'dark' ? (
-            /* 太阳图标 */
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="5" />
               <line x1="12" y1="1" x2="12" y2="3" />
               <line x1="12" y1="21" x2="12" y2="23" />
@@ -333,33 +324,21 @@ export default function GameBoard() {
               <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
             </svg>
           ) : (
-            /* 月亮图标 */
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
             </svg>
           )}
         </button>
       </header>
 
-      {/* ===== 全屏滑入式帮助面板 ===== */}
-      <HelpPanel isOpen={showHelp} onClose={() => setShowHelp(false)} />
+      {/* ===== 全屏帮助面板 ===== */}
+      <ClassicHelpPanel isOpen={showHelp} onClose={() => setShowHelp(false)} />
 
       {/* ===== 游戏区域 ===== */}
       <main className="flex flex-col items-center px-4 pt-6 pb-2 gap-2">
-        {/* 已完成的猜测行（可点击选中进行对比） */}
         {guesses.map((guess, rowIndex) => {
-          const selOrder = selectedRows.indexOf(rowIndex) // -1 未选, 0 第一选, 1 第二选
+          const selOrder = selectedRows.indexOf(rowIndex)
           const borderColor = selOrder === 0 ? '#f97316' : selOrder === 1 ? '#818cf8' : 'transparent'
           return (
             <div
@@ -371,7 +350,7 @@ export default function GameBoard() {
                 outlineOffset: '3px',
               }}
             >
-              <GuessRow
+              <ClassicGuessRow
                 guess={guess}
                 isRevealing={revealingRow === rowIndex}
                 isShaking={shakingRow === rowIndex}
@@ -380,19 +359,17 @@ export default function GameBoard() {
           )
         })}
 
-        {/* 当前输入行（游戏进行中才显示） */}
         {gameStatus === 'playing' && (
-          <GuessRow
+          <ClassicGuessRow
             key="current"
             currentInput={currentInput}
             isShaking={shakingRow === currentRowIndex}
           />
         )}
 
-        {/* 对比面板：选中两行后显示 */}
         {selectedRows.length === 2 && (
           <div className="w-full max-w-sm mt-2">
-            <DiffPanel
+            <ClassicDiffPanel
               rowA={{ index: selectedRows[0], guess: guesses[selectedRows[0]] }}
               rowB={{ index: selectedRows[1], guess: guesses[selectedRows[1]] }}
               onClear={() => setSelectedRows([])}

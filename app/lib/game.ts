@@ -39,3 +39,23 @@ export function getScore(attempts: number): ScoreInfo {
 }
 
 export const MAX_ATTEMPTS = 10
+
+// ===== 经典版（Bulls + Cows）=====
+
+export interface ClassicGuessResult {
+  digits: string[]
+  bulls: number
+  cows: number
+}
+
+/** 计算 bulls（位置+数字均对）和 cows（数字对但位置错） */
+export function checkGuessClassic(secret: string[], guess: string[]): ClassicGuessResult {
+  const bulls = guess.filter((d, i) => d === secret[i]).length
+  const secretRem = secret.filter((_, i) => guess[i] !== secret[i])
+  const guessRem = guess.filter((_, i) => guess[i] !== secret[i])
+  const cnt: Record<string, number> = {}
+  for (const d of secretRem) cnt[d] = (cnt[d] || 0) + 1
+  let cows = 0
+  for (const d of guessRem) if ((cnt[d] ?? 0) > 0) { cows++; cnt[d]-- }
+  return { digits: guess, bulls, cows }
+}
