@@ -304,31 +304,31 @@ export default function ClassicGameBoard() {
 
         {/* 右：主题切换 */}
         <button
-          onClick={toggleTheme}
-          aria-label={theme === 'dark' ? '切换浅色模式' : '切换深色模式'}
-          className="w-9 h-9 flex items-center justify-center rounded-full
-            transition-all duration-200 cursor-pointer select-none hover:opacity-80"
-          style={{ color: 'var(--bc-text-muted)' }}
-        >
-          {theme === 'dark' ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="5" />
-              <line x1="12" y1="1" x2="12" y2="3" />
-              <line x1="12" y1="21" x2="12" y2="23" />
-              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-              <line x1="1" y1="12" x2="3" y2="12" />
-              <line x1="21" y1="12" x2="23" y2="12" />
-              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-            </svg>
-          )}
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? '切换浅色模式' : '切换深色模式'}
+            className="w-9 h-9 flex items-center justify-center rounded-full
+              transition-all duration-200 cursor-pointer select-none hover:opacity-80"
+            style={{ color: 'var(--bc-text-muted)' }}
+          >
+            {theme === 'dark' ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="5" />
+                <line x1="12" y1="1" x2="12" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" />
+                <line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            )}
         </button>
       </header>
 
@@ -391,22 +391,39 @@ export default function ClassicGameBoard() {
           disabled={isDisabled}
         />
 
-        {/* 辅助计数器入口按钮：绝对定位，不影响 NumberPad 布局 */}
-        <button
-          onClick={() => setShowEliminator((v) => !v)}
-          aria-label={showEliminator ? '收起辅助计数器' : '打开辅助计数器'}
-          className="absolute right-4 bottom-6 flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all duration-200 hover:opacity-80 cursor-pointer select-none"
-          style={{ color: showEliminator ? '#538d4e' : 'var(--bc-text-muted)' }}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-            fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <rect x="3" y="3" width="7" height="7" rx="1" />
-            <rect x="14" y="3" width="7" height="7" rx="1" />
-            <rect x="3" y="14" width="7" height="7" rx="1" />
-            <rect x="14" y="14" width="7" height="7" rx="1" />
-          </svg>
-          <span className="text-sm font-medium">辅助计数器</span>
-        </button>
+        {/* 右侧竖排按钮组：绝对定位，不影响 NumberPad 布局 */}
+        <div className="absolute right-4 bottom-6 flex flex-col items-start gap-3">
+          {/* 重新开始 */}
+          <button
+            onClick={handleRestart}
+            aria-label="重新开始"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all duration-200 hover:opacity-80 cursor-pointer select-none"
+            style={{ color: 'var(--bc-text-muted)' }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="1 4 1 10 7 10" />
+              <path d="M3.51 15a9 9 0 1 0 .49-3.65" />
+            </svg>
+            <span className="text-sm font-medium">重新开始</span>
+          </button>
+          {/* 辅助计数器 */}
+          <button
+            onClick={() => setShowEliminator((v) => !v)}
+            aria-label={showEliminator ? '收起辅助计数器' : '打开辅助计数器'}
+            className="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all duration-200 hover:opacity-80 cursor-pointer select-none"
+            style={{ color: showEliminator ? '#538d4e' : 'var(--bc-text-muted)' }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7" rx="1" />
+              <rect x="14" y="3" width="7" height="7" rx="1" />
+              <rect x="3" y="14" width="7" height="7" rx="1" />
+              <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+            <span className="text-sm font-medium">辅助计数器</span>
+          </button>
+        </div>
       </footer>
 
       {/* ===== 排除器侧边栏 ===== */}

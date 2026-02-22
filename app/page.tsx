@@ -57,7 +57,7 @@ export default function HomePage() {
 
       {/* ===== HEADER ===== */}
       <header
-        className="flex items-center justify-between px-6 py-4 max-w-2xl mx-auto w-full"
+        className="relative flex items-center justify-center px-6 py-4 max-w-2xl mx-auto w-full"
         style={{ borderBottom: '1px solid var(--bc-border)' }}
       >
         <span
@@ -69,7 +69,7 @@ export default function HomePage() {
         <button
           onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
           aria-label={theme === 'dark' ? '切换浅色模式' : '切换深色模式'}
-          className="w-9 h-9 flex items-center justify-center rounded-full
+          className="absolute right-6 w-9 h-9 flex items-center justify-center rounded-full
             transition-all duration-200 cursor-pointer hover:opacity-80"
           style={{ color: 'var(--bc-text-muted)' }}
         >
