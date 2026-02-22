@@ -397,7 +397,7 @@ export default function GameBoard() {
 
       {/* ===== 数字键盘 ===== */}
       <footer
-        className="relative flex justify-center px-4 pb-6 pt-4 mt-2"
+        className="flex flex-col items-center px-4 pb-6 pt-4 mt-2 gap-4"
         style={{ borderTop: '1px solid var(--bc-border)' }}
       >
         <NumberPad
@@ -408,9 +408,8 @@ export default function GameBoard() {
           disabled={isDisabled}
         />
 
-        {/* 右侧竖排按钮组：绝对定位，不影响 NumberPad 布局 */}
-        <div className="absolute right-4 bottom-6 flex flex-col items-start gap-3">
-          {/* 重新开始 */}
+        {/* 重新开始 + 辅助计数器：一行排列，水平居中 */}
+        <div className="flex flex-row items-center justify-center gap-4">
           <button
             onClick={handleRestart}
             aria-label="重新开始"
@@ -424,7 +423,6 @@ export default function GameBoard() {
             </svg>
             <span className="text-sm font-medium">重新开始</span>
           </button>
-          {/* 辅助计数器 */}
           <button
             onClick={() => setShowEliminator((v) => !v)}
             aria-label={showEliminator ? '收起辅助计数器' : '打开辅助计数器'}

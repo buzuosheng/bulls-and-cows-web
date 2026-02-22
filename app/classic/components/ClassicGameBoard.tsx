@@ -147,26 +147,16 @@ export default function ClassicGameBoard() {
     const result = checkGuessClassic(secret, currentInput)
 
     // 自动排除逻辑（经典版）：
-    // bulls=0, cows=0 → 这4个数字均不在答案中，所有位置全部标为灰色
-    // bulls=0, cows>0 → 数字在答案中但位置不对，仅排除当前猜测位置
-    if (result.bulls === 0) {
+    // bulls=0 且 cows=0 → 这4个数字均不在答案中，整行（4个位置）全部标灰
+    if (result.bulls === 0 && result.cows === 0) {
       setElimCells((prev) => {
         const next = prev.map((r) => [...r])
-        if (result.cows === 0) {
-          // 4个数字全不在答案中，在所有位置标灰
-          currentInput.forEach((digit) => {
-            const row = parseInt(digit)
-            for (let col = 0; col < 4; col++) {
-              if (next[row][col] === 0) next[row][col] = 1
-            }
-          })
-        } else {
-          // 仅排除该数字在本次猜测的位置
-          currentInput.forEach((digit, col) => {
-            const row = parseInt(digit)
+        currentInput.forEach((digit) => {
+          const row = parseInt(digit)
+          for (let col = 0; col < 4; col++) {
             if (next[row][col] === 0) next[row][col] = 1
-          })
-        }
+          }
+        })
         return next
       })
     }
@@ -375,7 +365,7 @@ export default function ClassicGameBoard() {
 
       {/* ===== 数字键盘 ===== */}
       <footer
-        className="relative flex justify-center px-4 pb-6 pt-4 mt-2"
+        className="flex flex-col items-center px-4 pb-6 pt-4 mt-2 gap-4"
         style={{ borderTop: '1px solid var(--bc-border)' }}
       >
         <NumberPad
@@ -386,9 +376,8 @@ export default function ClassicGameBoard() {
           disabled={isDisabled}
         />
 
-        {/* 右侧竖排按钮组：绝对定位，不影响 NumberPad 布局 */}
-        <div className="absolute right-4 bottom-6 flex flex-col items-start gap-3">
-          {/* 重新开始 */}
+        {/* 重新开始 + 辅助计数器：一行排列，水平居中 */}
+        <div className="flex flex-row items-center justify-center gap-4">
           <button
             onClick={handleRestart}
             aria-label="重新开始"
@@ -402,7 +391,6 @@ export default function ClassicGameBoard() {
             </svg>
             <span className="text-sm font-medium">重新开始</span>
           </button>
-          {/* 辅助计数器 */}
           <button
             onClick={() => setShowEliminator((v) => !v)}
             aria-label={showEliminator ? '收起辅助计数器' : '打开辅助计数器'}
