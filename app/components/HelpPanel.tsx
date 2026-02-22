@@ -109,7 +109,7 @@ export default function HelpPanel({ isOpen, onClose }: HelpPanelProps) {
         <div className="max-w-lg mx-auto px-5 py-6 flex flex-col items-center text-center">
 
           <p className="text-lg mb-1" style={{ color: 'var(--bc-text)' }}>
-            在 <strong>10</strong> 次以内，猜出四位数字答案
+            用尽可能少的步数，猜出四位数字答案
           </p>
           <p className="text-base mb-6" style={{ color: 'var(--bc-text-muted)' }}>
             答案四位<strong>不重复</strong>，首位可为 0；猜测时数字可以重复

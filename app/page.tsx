@@ -207,7 +207,7 @@ export default function HomePage() {
           <p className="text-sm font-semibold" style={{ color: 'var(--bc-text)' }}>规则速览</p>
           <ul className="text-sm space-y-1" style={{ color: 'var(--bc-text-muted)' }}>
             <li>• 答案是 4 位<strong style={{ color: 'var(--bc-text)' }}>不重复</strong>的数字，首位可为 0</li>
-            <li>• 猜测时数字可以重复，共 <strong style={{ color: 'var(--bc-text)' }}>10</strong> 次机会</li>
+            <li>• 猜测时数字可以重复，步数越少评级越高</li>
             <li>• 支持键盘输入：数字键 · Backspace · Enter</li>
           </ul>
         </div>

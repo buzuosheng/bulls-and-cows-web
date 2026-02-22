@@ -3,10 +3,9 @@
 import Link from 'next/link'
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import {
-  MAX_ATTEMPTS,
   checkGuessClassic,
   generateSecret,
-  getScore,
+  getScoreClassic,
   isValidGuess,
   type ClassicGuessResult,
 } from '../../lib/game'
@@ -24,7 +23,7 @@ interface GameState {
   secret: string[]
   guesses: ClassicGuessResult[]
   currentInput: string[]
-  gameStatus: 'playing' | 'won' | 'lost'
+  gameStatus: 'playing' | 'won'
   revealingRow: number | null
 }
 
@@ -61,12 +60,11 @@ function reducer(state: GameState, action: Action): GameState {
       const result = action.result
       const newGuesses = [...state.guesses, result]
       const won = result.bulls === 4
-      const lost = !won && newGuesses.length >= MAX_ATTEMPTS
       return {
         ...state,
         guesses: newGuesses,
         currentInput: [],
-        gameStatus: won ? 'won' : lost ? 'lost' : 'playing',
+        gameStatus: won ? 'won' : 'playing',
         revealingRow: state.guesses.length,
       }
     }
@@ -121,16 +119,13 @@ export default function ClassicGameBoard() {
     return () => clearTimeout(timer)
   }, [revealingRow])
 
+  // 胜利后放烟花 + 延迟弹出结果
   useEffect(() => {
-    if (gameStatus !== 'playing' && revealingRow === null) {
-      if (gameStatus === 'won') {
-        setShowFireworks(true)
-        const fw = setTimeout(() => setShowFireworks(false), 3500)
-        const res = setTimeout(() => setShowResult(true), 600)
-        return () => { clearTimeout(fw); clearTimeout(res) }
-      }
-      const timer = setTimeout(() => setShowResult(true), 400)
-      return () => clearTimeout(timer)
+    if (gameStatus === 'won' && revealingRow === null) {
+      setShowFireworks(true)
+      const fw = setTimeout(() => setShowFireworks(false), 3500)
+      const res = setTimeout(() => setShowResult(true), 600)
+      return () => { clearTimeout(fw); clearTimeout(res) }
     }
   }, [gameStatus, revealingRow])
 
@@ -439,12 +434,11 @@ export default function ClassicGameBoard() {
       <Fireworks active={showFireworks} duration={3500} />
 
       {/* ===== 结果弹窗 ===== */}
-      {showResult && gameStatus !== 'playing' && (
+      {showResult && gameStatus === 'won' && (
         <ResultModal
-          won={gameStatus === 'won'}
           secret={secret}
           attempts={guesses.length}
-          score={getScore(guesses.length)}
+          score={getScoreClassic(guesses.length)}
           onRestart={handleRestart}
         />
       )}

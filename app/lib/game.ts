@@ -5,12 +5,6 @@ export interface GuessResult {
   bulls: number
 }
 
-export interface ScoreInfo {
-  stars: number
-  label: string
-  maxAttempts: number
-}
-
 /** 生成4位不重复数字（首位可为0） */
 export function generateSecret(): string[] {
   const digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
@@ -30,15 +24,34 @@ export function checkGuess(secret: string[], guess: string[]): GuessResult {
   return { digits: guess, bulls }
 }
 
-/** 根据猜测次数返回评分信息 */
-export function getScore(attempts: number): ScoreInfo {
-  if (attempts <= 4) return { stars: 5, label: '神乎其技', maxAttempts: attempts }
-  if (attempts <= 6) return { stars: 4, label: '优秀', maxAttempts: attempts }
-  if (attempts <= 8) return { stars: 3, label: '良好', maxAttempts: attempts }
-  return { stars: 2, label: '继续加油', maxAttempts: attempts }
+export interface ScoreInfo {
+  stars: number
+  label: string
 }
 
-export const MAX_ATTEMPTS = 10
+/**
+ * 简化版评分（仅 Bulls，平均 6 步）
+ * ≤6 步需要运气/实力，给 5 星；之后每 3 步降一档
+ */
+export function getScore(attempts: number): ScoreInfo {
+  if (attempts <= 6) return { stars: 5, label: '神乎其技' }
+  if (attempts <= 9) return { stars: 4, label: '优秀' }
+  if (attempts <= 12) return { stars: 3, label: '良好' }
+  if (attempts <= 15) return { stars: 2, label: '不错' }
+  return { stars: 1, label: '继续加油' }
+}
+
+/**
+ * 经典版评分（Bulls + Cows，平均 5 步）
+ * 按简化版比例缩放：≤5 步给 5 星，之后区间依次为 2/3/3 步
+ */
+export function getScoreClassic(attempts: number): ScoreInfo {
+  if (attempts <= 5) return { stars: 5, label: '神乎其技' }
+  if (attempts <= 7) return { stars: 4, label: '优秀' }
+  if (attempts <= 10) return { stars: 3, label: '良好' }
+  if (attempts <= 13) return { stars: 2, label: '不错' }
+  return { stars: 1, label: '继续加油' }
+}
 
 // ===== 经典版（Bulls + Cows）=====
 

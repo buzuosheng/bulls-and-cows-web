@@ -3,7 +3,6 @@
 import { ScoreInfo } from '../lib/game'
 
 interface ResultModalProps {
-  won: boolean
   secret: string[]
   attempts: number
   score: ScoreInfo
@@ -35,7 +34,6 @@ function StarRating({ stars }: { stars: number }) {
 }
 
 export default function ResultModal({
-  won,
   secret,
   attempts,
   score,
@@ -54,56 +52,28 @@ export default function ResultModal({
           color: 'var(--bc-text)',
         }}
       >
-        {/* 胜负标题 */}
-        {won ? (
-          <>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#538d4e"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="mx-auto mb-2"
-              aria-hidden="true"
-            >
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-            <h2 className="text-2xl font-bold">猜对了！</h2>
-            <StarRating stars={score.stars} />
-            <p className="text-sm mt-1" style={{ color: 'var(--bc-text-muted)' }}>
-              {score.label}
-            </p>
-          </>
-        ) : (
-          <>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#b59f3b"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="mx-auto mb-2"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            <h2 className="text-2xl font-bold">挑战失败</h2>
-            <p className="text-sm mt-1" style={{ color: 'var(--bc-text-muted)' }}>
-              已用完 10 次机会
-            </p>
-          </>
-        )}
+        {/* 胜利标题 */}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#538d4e"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="mx-auto mb-2"
+          aria-hidden="true"
+        >
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+        <h2 className="text-2xl font-bold">猜对了！</h2>
+        <StarRating stars={score.stars} />
+        <p className="text-sm mt-1" style={{ color: 'var(--bc-text-muted)' }}>
+          {score.label}
+        </p>
 
         {/* 答案 */}
         <div className="mt-5 mb-4">
@@ -138,14 +108,12 @@ export default function ResultModal({
                 猜测次数
               </p>
             </div>
-            {won && (
-              <div>
-                <p className="text-2xl font-bold">{score.stars}</p>
-                <p className="text-xs" style={{ color: 'var(--bc-text-muted)' }}>
-                  星级评分
-                </p>
-              </div>
-            )}
+            <div>
+              <p className="text-2xl font-bold">{score.stars}</p>
+              <p className="text-xs" style={{ color: 'var(--bc-text-muted)' }}>
+                星级评分
+              </p>
+            </div>
           </div>
         </div>
 
