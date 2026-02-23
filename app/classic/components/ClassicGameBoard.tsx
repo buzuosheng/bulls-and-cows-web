@@ -61,12 +61,13 @@ function reducer(state: GameState, action: Action): GameState {
       const result = action.result
       const newGuesses = [...state.guesses, result]
       const won = result.bulls === 4
+      // 仅猜对时设置 revealingRow，用于翻转动画；错误猜测无翻转，不锁键盘
       return {
         ...state,
         guesses: newGuesses,
         currentInput: [],
         gameStatus: won ? 'won' : 'playing',
-        revealingRow: state.guesses.length,
+        revealingRow: won ? state.guesses.length : null,
       }
     }
     case 'SET_REVEALING': {
