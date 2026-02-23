@@ -91,8 +91,17 @@ export default function GameBoard() {
   const [showEliminator, setShowEliminator] = useState(false)
   const [elimCells, setElimCells] = useState<number[][]>(INIT_CELLS)
   const [selectedRows, setSelectedRows] = useState<number[]>([])
+  const [isTouchDevice, setIsTouchDevice] = useState(false)
 
   const { secret, guesses, currentInput, gameStatus, revealingRow } = state
+
+  // 触摸设备检测：手机/iPad 上不聚焦隐藏 input，避免弹出系统键盘
+  useEffect(() => {
+    const touch =
+      typeof window !== 'undefined' &&
+      ('ontouchstart' in window || window.matchMedia('(pointer: coarse)').matches)
+    setIsTouchDevice(!!touch)
+  }, [])
 
   // 初始化时从 localStorage 读取主题
   useEffect(() => {
@@ -192,10 +201,10 @@ export default function GameBoard() {
   // 隐藏的 input：让 Vimium 等浏览器插件认为页面有可编辑区域，自动进入 insert mode
   const hiddenInputRef = useRef<HTMLInputElement>(null)
 
-  // 挂载后聚焦隐藏 input（而非 div），Vimium 遇到 input 会自动放行键盘事件
+  // 挂载后聚焦隐藏 input（仅非触摸设备），Vimium 遇到 input 会自动放行键盘事件
   useEffect(() => {
-    hiddenInputRef.current?.focus()
-  }, [])
+    if (!isTouchDevice) hiddenInputRef.current?.focus()
+  }, [isTouchDevice])
 
   // 处理按键（绑在游戏容器的 onKeyDown 上）
   const handleKeyDown = useCallback(
@@ -231,7 +240,9 @@ export default function GameBoard() {
   return (
     <div
       className="flex flex-col overflow-hidden relative"
-      onClick={() => hiddenInputRef.current?.focus()}
+      onClick={() => {
+        if (!isTouchDevice) hiddenInputRef.current?.focus()
+      }}
     >
       {/*
         隐藏的 input：解决 Vimium 等浏览器插件拦截键盘的问题。
@@ -249,6 +260,8 @@ export default function GameBoard() {
         autoCapitalize="off"
         spellCheck={false}
         tabIndex={-1}
+        readOnly
+        inputMode="none"
       />
 
       {/* ===== HEADER ===== */}
