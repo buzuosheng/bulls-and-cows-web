@@ -1,11 +1,14 @@
 'use client'
 
 import { ScoreInfo } from '../lib/game'
+import { GameStats } from '../lib/stats'
 
 interface ResultModalProps {
   secret: string[]
   attempts: number
   score: ScoreInfo
+  stats?: GameStats
+  isNewBest?: boolean
   onRestart: () => void
 }
 
@@ -37,8 +40,13 @@ export default function ResultModal({
   secret,
   attempts,
   score,
+  stats,
+  isNewBest,
   onRestart,
 }: ResultModalProps) {
+  const winRate = stats && stats.totalGames > 0
+    ? Math.round((stats.wins / stats.totalGames) * 100)
+    : 0
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in"
@@ -115,6 +123,25 @@ export default function ResultModal({
               </p>
             </div>
           </div>
+          {stats && (
+            <div className="flex justify-center gap-8 mt-4 pt-4 border-t" style={{ borderColor: 'var(--bc-border)' }}>
+              <div>
+                <p className="text-2xl font-bold">{stats.totalGames}</p>
+                <p className="text-xs" style={{ color: 'var(--bc-text-muted)' }}>总对局</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{winRate}%</p>
+                <p className="text-xs" style={{ color: 'var(--bc-text-muted)' }}>胜率</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold">
+                  {stats.bestSteps || '-'}
+                  {isNewBest && ' 🎉'}
+                </p>
+                <p className="text-xs" style={{ color: 'var(--bc-text-muted)' }}>最佳步数</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 再来一局 */}

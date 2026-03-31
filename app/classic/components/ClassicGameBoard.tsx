@@ -9,6 +9,7 @@ import {
   isValidGuess,
   type ClassicGuessResult,
 } from '../../lib/game'
+import { type GameStats, loadStats, recordLoss, recordWin } from '../../lib/stats'
 import { RotateCw } from 'lucide-react'
 import EliminatorPanel, { INIT_CELLS } from '../../components/EliminatorPanel'
 import Fireworks from '../../components/Fireworks'
@@ -92,6 +93,9 @@ export default function ClassicGameBoard() {
   const [elimCells, setElimCells] = useState<number[][]>(INIT_CELLS)
   const [selectedRows, setSelectedRows] = useState<number[]>([])
   const [isTouchDevice, setIsTouchDevice] = useState(false)
+  const [stats, setStats] = useState<GameStats | null>(null)
+  const [isNewBest, setIsNewBest] = useState(false)
+  const hasRecordedWin = useRef(false)
 
   const { secret, guesses, currentInput, gameStatus, revealingRow } = state
 
@@ -130,15 +134,23 @@ export default function ClassicGameBoard() {
     return () => clearTimeout(timer)
   }, [revealingRow])
 
-  // 胜利后放烟花 + 延迟弹出结果
+  // 胜利后记录统计 + 放烟花 + 延迟弹出结果
   useEffect(() => {
     if (gameStatus === 'won' && revealingRow === null) {
+      if (!hasRecordedWin.current) {
+        hasRecordedWin.current = true
+        const prevBest = loadStats('classic').bestSteps
+        const updated = recordWin('classic', guesses.length)
+        setStats(updated)
+        setIsNewBest(prevBest === 0 || guesses.length < prevBest)
+      }
+
       setShowFireworks(true)
       const fw = setTimeout(() => setShowFireworks(false), 3500)
       const res = setTimeout(() => setShowResult(true), 600)
       return () => { clearTimeout(fw); clearTimeout(res) }
     }
-  }, [gameStatus, revealingRow])
+  }, [gameStatus, revealingRow, guesses.length])
 
   const handleDigit = useCallback(
     (digit: string) => {
@@ -176,11 +188,17 @@ export default function ClassicGameBoard() {
   }, [currentInput, guesses.length, secret])
 
   const handleRestart = useCallback(() => {
+    if (gameStatus === 'playing' && guesses.length > 0) {
+      recordLoss('classic')
+    }
     setShowResult(false)
     setElimCells(INIT_CELLS())
     setSelectedRows([])
+    setStats(null)
+    setIsNewBest(false)
+    hasRecordedWin.current = false
     dispatch({ type: 'RESTART' })
-  }, [])
+  }, [gameStatus, guesses.length])
 
   const handleRowSelect = useCallback((rowIndex: number) => {
     setSelectedRows((prev) => {
@@ -442,6 +460,8 @@ export default function ClassicGameBoard() {
           secret={secret}
           attempts={guesses.length}
           score={getScoreClassic(guesses.length)}
+          stats={stats ?? undefined}
+          isNewBest={isNewBest}
           onRestart={handleRestart}
         />
       )}

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import CreditFooter from './components/CreditFooter'
+import { type GameStats, loadStats, resetStats } from './lib/stats'
 
 type Theme = 'dark' | 'light'
 
@@ -32,8 +33,23 @@ function MoonIcon() {
   )
 }
 
+function StatsLine({ stats }: { stats: GameStats }) {
+  if (stats.totalGames === 0) {
+    return <span className="text-xs" style={{ color: 'var(--bc-text-muted)' }}>📊 暂无记录</span>
+  }
+  const winRate = Math.round((stats.wins / stats.totalGames) * 100)
+  const best = stats.bestSteps > 0 ? `最佳${stats.bestSteps}步` : ''
+  return (
+    <span className="text-xs" style={{ color: 'var(--bc-text-muted)' }}>
+      📊 {stats.totalGames}局 · 胜率{winRate}%{best ? ` · ${best}` : ''}
+    </span>
+  )
+}
+
 export default function HomePage() {
   const [theme, setTheme] = useState<Theme>('light')
+  const [simpleStats, setSimpleStats] = useState<GameStats | null>(null)
+  const [classicStats, setClassicStats] = useState<GameStats | null>(null)
 
   // 初始化时从 localStorage 读取
   useEffect(() => {
@@ -41,6 +57,8 @@ export default function HomePage() {
       const saved = localStorage.getItem('bc-theme')
       if (saved === 'dark') setTheme('dark')
     } catch { /* ignore */ }
+    setSimpleStats(loadStats('simple'))
+    setClassicStats(loadStats('classic'))
   }, [])
 
   // 同步到 html 类 + localStorage
@@ -136,6 +154,8 @@ export default function HomePage() {
               </span>
             </div>
 
+            {simpleStats && <StatsLine stats={simpleStats} />}
+
             <span
               className="text-sm font-semibold group-hover:underline"
               style={{ color: '#538d4e' }}
@@ -190,6 +210,8 @@ export default function HomePage() {
               </span>
             </div>
 
+            {classicStats && <StatsLine stats={classicStats} />}
+
             <span
               className="text-sm font-semibold group-hover:underline"
               style={{ color: '#b59f3b' }}
@@ -212,6 +234,22 @@ export default function HomePage() {
             <li>• 支持键盘输入：数字键 · Backspace · Enter</li>
           </ul>
         </div>
+
+        {/* ===== 清除统计 ===== */}
+        <button
+          onClick={() => {
+            if (confirm('确定要清除所有统计数据吗？')) {
+              resetStats('simple')
+              resetStats('classic')
+              setSimpleStats(loadStats('simple'))
+              setClassicStats(loadStats('classic'))
+            }
+          }}
+          className="text-xs transition-opacity hover:opacity-70 cursor-pointer"
+          style={{ color: 'var(--bc-text-muted)' }}
+        >
+          清除统计数据
+        </button>
       </main>
 
       {/* ===== 页面最底部：署名与源码链接 ===== */}
