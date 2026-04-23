@@ -36,7 +36,7 @@ export default function NumberPad({
     : defaultStyle
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-2" role="group" aria-label="数字键盘">
       {/* 数字行 7-9, 4-6, 1-3 */}
       {DIGIT_ROWS.map((row, ri) => (
         <div key={ri} className="flex gap-2">

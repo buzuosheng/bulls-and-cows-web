@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect } from 'react'
+
 // 三种状态：0=黄(可能) 1=灰(已排除) 2=绿(已确认)
 const CELL_STYLES = [
   { bg: '#e6c619', border: '#e6c619', text: '#1a1a1b', label: '可能' },
@@ -25,6 +27,15 @@ export default function EliminatorPanel({
   onCellClick,
   onReset,
 }: EliminatorPanelProps) {
+  useEffect(() => {
+    if (!isOpen) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [isOpen, onClose])
+
   return (
     <>
       {/* 移动端/平板遮罩：仅 lg 以下显示，点击关闭侧边栏；桌面端不显示遮罩 */}
@@ -42,6 +53,8 @@ export default function EliminatorPanel({
 
       {/* 侧边栏本体 */}
       <div
+        role="complementary"
+        aria-label="辅助计数器面板"
         className="fixed right-0 top-0 h-full z-40 flex flex-col shadow-2xl transition-transform duration-300 ease-in-out w-[310px] max-w-[85vw] sm:max-w-none"
         style={{
           background: 'var(--bc-bg)',

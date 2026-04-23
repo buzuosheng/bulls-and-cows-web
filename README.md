@@ -1,37 +1,68 @@
 # Bulls & Cows
 
-数字猜谜小游戏：简化版（仅 Bulls）与经典版（Bulls + Cows），支持主题切换、辅助计数器、行对比等。  
-技术栈：Next.js、React、TypeScript、Tailwind CSS。
+数字猜谜小游戏，支持**简化版**和**经典版**两种玩法。
 
----
+## 游戏模式
 
-## TODO List
+### 简化版
 
-### 功能与体验
+每次猜测后只告诉你**命中数（Bulls）**：数字和位置都正确才算命中。仅靠命中数来推理答案。
 
-- [ ] **对局统计**：用 localStorage 记录总局数、胜率、平均步数、最少步数，在首页或结果弹窗展示一句摘要
-- [ ] **分享结果**：猜中后提供「复制结果」按钮，生成类似 Wordle 的一行摘要（如 `Bulls & Cows 4/6 ⭐⭐⭐`）便于分享
-- [ ] **无结果提示**：在结果弹窗中加一句轻量引导（如「下次试试用辅助计数器和行对比，能更快猜中」）
+### 经典版
 
-### 无障碍与可用性
+每次猜测后同时显示 **Bulls（B）** 和 **Cows（C）**：
+- **B**：数字正确且位置正确
+- **C**：数字在答案中但位置错误
 
-- [ ] **焦点与键盘**：规则面板、结果弹窗打开时把焦点移入，关闭时还原；支持 Esc 关闭规则/弹窗
-- [ ] **减少动效**：在 CSS 中根据 `prefers-reduced-motion: reduce` 关闭或减弱 flip、烟花等动画
-- [ ] **语义与标签**：为猜测区域、数字键盘、辅助计数器补全 `aria-label` / `role`，方便读屏
+## 功能特性
 
-### 代码与工程
+- 🎯 两种游戏模式（简化版 / 经典版）
+- 🔢 数字键盘 + 物理键盘双支持
+- 📊 对局统计（总局数、胜率、最佳步数）
+- 🔍 辅助计数器（排除/确认数字）
+- 📏 行对比（选中两行，自动推理分析）
+- 🌓 深色 / 浅色主题切换
+- 🎆 胜利烟花动画
 
-- [ ] **抽共用布局**：将 GameBoard 与 ClassicGameBoard 的 header、footer、主题/键盘逻辑、Eliminator 状态抽成共用布局或 hook，减少重复
-- [ ] **E2E 测试**：用 Playwright 为「进入游戏 → 猜一次 → 看结果/重开」等关键路径写 1～2 个用例
+## 技术栈
 
-### 部署与分享
+- [Next.js](https://nextjs.org/) 16 (App Router)
+- [React](https://react.dev/) 19
+- [TypeScript](https://www.typescriptlang.org/) 5
+- [Tailwind CSS](https://tailwindcss.com/) 4
+- [lucide-react](https://lucide.dev/) 图标
+- [Playwright](https://playwright.dev/) E2E 测试
 
-- [ ] **README 项目说明**：在 README 中补充两种模式说明、在线地址、本地运行方式、技术栈及仓库/博客链接
-- [ ] **SEO / 分享**：为首页与 /simple、/classic 配置 description 与 Open Graph（og:title、og:description），优化分享预览
-- [ ] **自定义 404**：在 `app/not-found.tsx` 中做风格统一的 404 页，带「返回首页」与主题一致样式
+## 本地运行
 
-### 可选增强
+```bash
+npm install
+npm run dev
+```
 
-- [ ] **对局恢复**：将当前局 guesses、elimCells 存到 localStorage，刷新或误关后可恢复，并提示「是否恢复未完成对局」
-- [ ] **多语言**：若需中英双语，将文案抽到 key-value 或 next-intl，先搭结构再补翻译
-- [ ] **PWA**：需要「添加到主屏幕」或离线壳子时，增加 manifest.json 与 Service Worker
+打开 [http://localhost:3000](http://localhost:3000) 即可开始游戏。
+
+## 构建
+
+```bash
+npm run build
+npm start
+```
+
+## 项目结构
+
+```
+app/
+├── components/     # 共用组件（GameShell、NumberPad、ResultModal 等）
+├── hooks/          # 共用 Hooks（useTheme、useKeyboard、useEliminator、useGameStats）
+├── lib/            # 游戏逻辑（game.ts）、统计（stats.ts）
+├── simple/         # 简化版页面
+├── classic/        # 经典版页面及其专属组件
+├── layout.tsx      # 根布局
+├── page.tsx        # 首页
+└── not-found.tsx   # 404 页面
+```
+
+## 仓库
+
+[GitHub](https://github.com/buzuosheng/bulls-and-cows-web)

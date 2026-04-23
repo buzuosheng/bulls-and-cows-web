@@ -1,7 +1,6 @@
 'use client'
 
-import Link from 'next/link'
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import { useCallback, useEffect, useReducer, useState } from 'react'
 import {
   checkGuess,
   generateSecret,
@@ -9,17 +8,18 @@ import {
   isValidGuess,
   type GuessResult,
 } from '../lib/game'
-import { type GameStats, loadStats, recordLoss, recordWin } from '../lib/stats'
+import { useEliminator } from '../hooks/useEliminator'
+import { useGameStats } from '../hooks/useGameStats'
 import { RotateCw } from 'lucide-react'
 import DiffPanel from './DiffPanel'
-import EliminatorPanel, { INIT_CELLS } from './EliminatorPanel'
+import EliminatorPanel from './EliminatorPanel'
 import Fireworks from './Fireworks'
+import GameShell from './GameShell'
 import GuessRow from './GuessRow'
 import HelpPanel from './HelpPanel'
 import NumberPad from './NumberPad'
+import OnboardingModal from './OnboardingModal'
 import ResultModal from './ResultModal'
-
-type Theme = 'dark' | 'light'
 
 interface GameState {
   secret: string[]
@@ -63,7 +63,6 @@ function reducer(state: GameState, action: Action): GameState {
       const result = checkGuess(state.secret, state.currentInput)
       const newGuesses = [...state.guesses, result]
       const won = result.bulls === 4
-      // 仅猜对时设置 revealingRow，用于翻转动画；错误猜测无翻转，不锁键盘
       return {
         ...state,
         guesses: newGuesses,
@@ -85,46 +84,15 @@ function reducer(state: GameState, action: Action): GameState {
 
 export default function GameBoard() {
   const [state, dispatch] = useReducer(reducer, undefined, createInitialState)
-  const [showHelp, setShowHelp] = useState(false)
   const [shakingRow, setShakingRow] = useState<number | null>(null)
   const [showResult, setShowResult] = useState(false)
   const [showFireworks, setShowFireworks] = useState(false)
-  const [theme, setTheme] = useState<Theme>('light')
-  const [showEliminator, setShowEliminator] = useState(false)
-  const [elimCells, setElimCells] = useState<number[][]>(INIT_CELLS)
   const [selectedRows, setSelectedRows] = useState<number[]>([])
-  const [isTouchDevice, setIsTouchDevice] = useState(false)
-  const [stats, setStats] = useState<GameStats | null>(null)
-  const [isNewBest, setIsNewBest] = useState(false)
-  const hasRecordedWin = useRef(false)
+
+  const { elimCells, showEliminator, setShowEliminator, handleCellClick, applyAutoElimination, resetEliminator } = useEliminator()
+  const { stats, isNewBest, recordWinResult, recordLossResult, resetGameStats } = useGameStats('simple')
 
   const { secret, guesses, currentInput, gameStatus, revealingRow } = state
-
-  // 触摸设备检测：手机/iPad 上不聚焦隐藏 input，避免弹出系统键盘
-  useEffect(() => {
-    const touch =
-      typeof window !== 'undefined' &&
-      ('ontouchstart' in window || window.matchMedia('(pointer: coarse)').matches)
-    setIsTouchDevice(!!touch)
-  }, [])
-
-  // 初始化时从 localStorage 读取主题
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('bc-theme')
-      if (saved === 'dark') setTheme('dark')
-    } catch { /* ignore */ }
-  }, [])
-
-  // 同步主题到 html 类 + localStorage
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-    try { localStorage.setItem('bc-theme', theme) } catch { /* ignore */ }
-  }, [theme])
 
   // 翻转动画结束后清除 revealingRow
   useEffect(() => {
@@ -139,20 +107,14 @@ export default function GameBoard() {
   // 胜利后记录统计 + 放烟花 + 延迟弹出结果
   useEffect(() => {
     if (gameStatus === 'won' && revealingRow === null) {
-      if (!hasRecordedWin.current) {
-        hasRecordedWin.current = true
-        const prevBest = loadStats('simple').bestSteps
-        const updated = recordWin('simple', guesses.length)
-        setStats(updated)
-        setIsNewBest(prevBest === 0 || guesses.length < prevBest)
-      }
+      recordWinResult(guesses.length)
 
       setShowFireworks(true)
       const fw = setTimeout(() => setShowFireworks(false), 3500)
       const res = setTimeout(() => setShowResult(true), 600)
       return () => { clearTimeout(fw); clearTimeout(res) }
     }
-  }, [gameStatus, revealingRow, guesses.length])
+  }, [gameStatus, revealingRow, guesses.length, recordWinResult])
 
   const handleDigit = useCallback(
     (digit: string) => {
@@ -169,33 +131,21 @@ export default function GameBoard() {
       setTimeout(() => setShakingRow(null), 600)
       return
     }
-    // 命中数=0时，自动将4个位置对应的数字在排除器中标为"已排除"
     const result = checkGuess(secret, currentInput)
-    if (result.bulls === 0) {
-      setElimCells((prev) => {
-        const next = prev.map((r) => [...r])
-        currentInput.forEach((digit, col) => {
-          const row = parseInt(digit)
-          if (next[row][col] === 0) next[row][col] = 1 // 不覆盖已手动确认的格子
-        })
-        return next
-      })
-    }
+    applyAutoElimination({ digits: currentInput, bulls: result.bulls }, 'simple')
     dispatch({ type: 'SUBMIT_GUESS' })
-  }, [currentInput, guesses.length, secret])
+  }, [currentInput, guesses.length, secret, applyAutoElimination])
 
   const handleRestart = useCallback(() => {
     if (gameStatus === 'playing' && guesses.length > 0) {
-      recordLoss('simple')
+      recordLossResult()
     }
     setShowResult(false)
-    setElimCells(INIT_CELLS())
+    resetEliminator()
     setSelectedRows([])
-    setStats(null)
-    setIsNewBest(false)
-    hasRecordedWin.current = false
+    resetGameStats()
     dispatch({ type: 'RESTART' })
-  }, [gameStatus, guesses.length])
+  }, [gameStatus, guesses.length, recordLossResult, resetEliminator, resetGameStats])
 
   const handleRowSelect = useCallback((rowIndex: number) => {
     setSelectedRows((prev) => {
@@ -205,188 +155,22 @@ export default function GameBoard() {
     })
   }, [])
 
-  const handleElimCellClick = useCallback((row: number, col: number) => {
-    setElimCells((prev) => {
-      const next = prev.map((r) => [...r])
-      next[row][col] = (next[row][col] + 1) % 3
-      return next
-    })
-  }, [])
-
-  const toggleTheme = useCallback(() => {
-    setTheme((t) => (t === 'dark' ? 'light' : 'dark'))
-  }, [])
-
-  // 隐藏的 input：让 Vimium 等浏览器插件认为页面有可编辑区域，自动进入 insert mode
-  const hiddenInputRef = useRef<HTMLInputElement>(null)
-
-  // 挂载后聚焦隐藏 input（仅非触摸设备），Vimium 遇到 input 会自动放行键盘事件
-  useEffect(() => {
-    if (!isTouchDevice) hiddenInputRef.current?.focus()
-  }, [isTouchDevice])
-
-  // 处理按键（绑在游戏容器的 onKeyDown 上）
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent | KeyboardEvent) => {
-      if (showHelp || showResult) return
-      if ('isComposing' in e && e.isComposing) return // 忽略 IME 组合输入中的事件
-
-      // 字母行数字键 Digit0–Digit9 / 小键盘 Numpad0–Numpad9
-      if (/^Digit[0-9]$/.test(e.code)) {
-        e.preventDefault()
-        handleDigit(e.code.slice(5))
-      } else if (/^Numpad[0-9]$/.test(e.code)) {
-        e.preventDefault()
-        handleDigit(e.code.slice(6))
-      } else if (/^[0-9]$/.test(e.key)) {
-        // 兜底：通过 e.key 识别（e.code 不符合时）
-        e.preventDefault()
-        handleDigit(e.key)
-      } else if (e.code === 'Backspace' || e.key === 'Backspace') {
-        e.preventDefault()
-        handleDelete()
-      } else if (e.code === 'Enter' || e.code === 'NumpadEnter' || e.key === 'Enter') {
-        e.preventDefault()
-        handleEnter()
-      }
-    },
-    [showHelp, showResult, handleDigit, handleDelete, handleEnter],
-  )
-
   const isDisabled = gameStatus !== 'playing' || revealingRow !== null
   const currentRowIndex = guesses.length
 
   return (
-    <div
-      className="flex flex-col overflow-hidden relative"
-      onClick={() => {
-        if (!isTouchDevice) hiddenInputRef.current?.focus()
-      }}
+    <GameShell
+      title="简化版"
+      renderHelpPanel={(isOpen, onClose) => <HelpPanel isOpen={isOpen} onClose={onClose} />}
+      onDigit={handleDigit}
+      onDelete={handleDelete}
+      onEnter={handleEnter}
+      keyboardDisabled={showResult}
     >
-      {/*
-        隐藏的 input：解决 Vimium 等浏览器插件拦截键盘的问题。
-        Vimium 检测到 input 被聚焦时会自动进入 insert mode，放行所有按键给页面。
-        样式上完全不可见，不影响布局。
-      */}
-      <input
-        ref={hiddenInputRef}
-        onKeyDown={handleKeyDown}
-        onInput={(e) => { (e.target as HTMLInputElement).value = '' }}
-        style={{ position: 'fixed', opacity: 0, width: 0, height: 0, pointerEvents: 'none', top: 0, left: 0 }}
-        aria-hidden="true"
-        autoComplete="off"
-        autoCorrect="off"
-        autoCapitalize="off"
-        spellCheck={false}
-        tabIndex={-1}
-        readOnly
-        inputMode="none"
-      />
-
-      {/* ===== HEADER ===== */}
-      <header
-        className="relative z-10 flex items-center justify-between px-3 sm:px-4 py-3 max-w-lg mx-auto w-full"
-        style={{ borderBottom: '1px solid var(--bc-border)' }}
-      >
-        {/* 左：返回首页 + ? 帮助 */}
-        <div className="flex items-center gap-1">
-          <Link
-            href="/"
-            aria-label="返回首页"
-            className="w-9 h-9 flex items-center justify-center rounded-full
-              transition-all duration-200 cursor-pointer select-none hover:opacity-80"
-            style={{ color: 'var(--bc-text-muted)' }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </Link>
-          <button
-            onClick={() => setShowHelp((v) => !v)}
-            aria-label="游戏规则"
-            aria-expanded={showHelp}
-            className="w-9 h-9 flex items-center justify-center rounded-full
-              transition-all duration-200 cursor-pointer select-none hover:opacity-80"
-            style={{ color: showHelp ? '#538d4e' : 'var(--bc-text-muted)' }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-          </button>
-        </div>
-
-        {/* 中：标题 */}
-        <h1
-          className="text-xl font-bold tracking-widest select-none"
-          style={{ color: 'var(--bc-text)' }}
-        >
-          简化版
-        </h1>
-
-        {/* 右：主题切换 */}
-        <button
-            onClick={toggleTheme}
-            aria-label={theme === 'dark' ? '切换浅色模式' : '切换深色模式'}
-            className="w-9 h-9 flex items-center justify-center rounded-full
-              transition-all duration-200 cursor-pointer select-none hover:opacity-80"
-            style={{ color: 'var(--bc-text-muted)' }}
-          >
-          {theme === 'dark' ? (
-            /* 太阳图标 */
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="5" />
-              <line x1="12" y1="1" x2="12" y2="3" />
-              <line x1="12" y1="21" x2="12" y2="23" />
-              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-              <line x1="1" y1="12" x2="3" y2="12" />
-              <line x1="21" y1="12" x2="23" y2="12" />
-              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-            </svg>
-          ) : (
-            /* 月亮图标 */
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-            </svg>
-          )}
-        </button>
-      </header>
-
-      {/* ===== 全屏滑入式帮助面板 ===== */}
-      <HelpPanel isOpen={showHelp} onClose={() => setShowHelp(false)} />
-
       {/* ===== 游戏区域 ===== */}
-      <main className="flex flex-col items-center px-3 sm:px-4 pt-4 sm:pt-6 pb-2 gap-2">
-        {/* 已完成的猜测行（可点击选中进行对比） */}
+      <main className="flex flex-col items-center px-3 sm:px-4 pt-4 sm:pt-6 pb-2 gap-2" role="list" aria-label="猜测历史">
         {guesses.map((guess, rowIndex) => {
-          const selOrder = selectedRows.indexOf(rowIndex) // -1 未选, 0 第一选, 1 第二选
+          const selOrder = selectedRows.indexOf(rowIndex)
           const borderColor = selOrder === 0 ? '#f97316' : selOrder === 1 ? '#818cf8' : 'transparent'
           return (
             <div
@@ -407,7 +191,6 @@ export default function GameBoard() {
           )
         })}
 
-        {/* 当前输入行（游戏进行中才显示） */}
         {gameStatus === 'playing' && (
           <GuessRow
             key="current"
@@ -416,7 +199,6 @@ export default function GameBoard() {
           />
         )}
 
-        {/* 对比面板：选中两行后显示 */}
         {selectedRows.length === 2 && (
           <div className="w-full max-w-sm mt-2">
             <DiffPanel
@@ -444,7 +226,6 @@ export default function GameBoard() {
           disabled={isDisabled}
         />
 
-        {/* 重新开始 + 辅助计数器：一行排列，水平居中 */}
         <div className="flex flex-row items-center justify-center gap-4">
           <button
             onClick={handleRestart}
@@ -478,8 +259,8 @@ export default function GameBoard() {
         isOpen={showEliminator}
         onClose={() => setShowEliminator(false)}
         cells={elimCells}
-        onCellClick={handleElimCellClick}
-        onReset={() => setElimCells(INIT_CELLS())}
+        onCellClick={handleCellClick}
+        onReset={resetEliminator}
       />
 
       {/* ===== 烟花庆祝 ===== */}
@@ -496,6 +277,9 @@ export default function GameBoard() {
           onRestart={handleRestart}
         />
       )}
-    </div>
+
+      {/* ===== 新手引导 ===== */}
+      <OnboardingModal mode="simple" />
+    </GameShell>
   )
 }

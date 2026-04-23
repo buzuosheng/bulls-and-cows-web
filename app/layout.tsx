@@ -19,8 +19,12 @@ const notoSansSC = Noto_Sans_SC({
 })
 
 export const metadata: Metadata = {
-  title: '猜数字',
-  description: '4位数字猜谜游戏。每次猜测后，系统会告诉你命中数（数字和位置都正确）。尝试在最少次数内猜出答案！',
+  title: 'Bulls & Cows — 数字猜谜',
+  description: '4 位数字猜谜游戏，简化版与经典版两种玩法',
+  openGraph: {
+    title: 'Bulls & Cows — 数字猜谜',
+    description: '4 位数字猜谜游戏，简化版与经典版两种玩法',
+  },
 }
 
 export const viewport = {

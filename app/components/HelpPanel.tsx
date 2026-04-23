@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import CreditFooter from './CreditFooter'
 
 const BULLS_COLORS: Record<number, string> = {
@@ -64,14 +65,34 @@ interface HelpPanelProps {
 }
 
 export default function HelpPanel({ isOpen, onClose }: HelpPanelProps) {
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (isOpen) panelRef.current?.focus()
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [isOpen, onClose])
+
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col transition-transform duration-500 ease-in-out"
+      ref={panelRef}
+      tabIndex={-1}
+      className="fixed inset-0 z-50 flex flex-col transition-transform duration-500 ease-in-out outline-none"
       style={{
         background: 'var(--bc-bg)',
         transform: isOpen ? 'translateY(0)' : 'translateY(-100%)',
       }}
       aria-hidden={!isOpen}
+      role="dialog"
+      aria-modal={isOpen}
+      aria-label="游戏规则"
     >
       {/* 面板 Header */}
       <div

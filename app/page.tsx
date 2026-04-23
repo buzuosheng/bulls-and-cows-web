@@ -3,9 +3,8 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import CreditFooter from './components/CreditFooter'
+import { useTheme } from './hooks/useTheme'
 import { type GameStats, loadStats, resetStats } from './lib/stats'
-
-type Theme = 'dark' | 'light'
 
 function SunIcon() {
   return (
@@ -47,29 +46,14 @@ function StatsLine({ stats }: { stats: GameStats }) {
 }
 
 export default function HomePage() {
-  const [theme, setTheme] = useState<Theme>('light')
+  const { theme, toggleTheme } = useTheme()
   const [simpleStats, setSimpleStats] = useState<GameStats | null>(null)
   const [classicStats, setClassicStats] = useState<GameStats | null>(null)
 
-  // 初始化时从 localStorage 读取
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('bc-theme')
-      if (saved === 'dark') setTheme('dark')
-    } catch { /* ignore */ }
     setSimpleStats(loadStats('simple'))
     setClassicStats(loadStats('classic'))
   }, [])
-
-  // 同步到 html 类 + localStorage
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-    try { localStorage.setItem('bc-theme', theme) } catch { /* ignore */ }
-  }, [theme])
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bc-bg)' }}>
@@ -86,7 +70,7 @@ export default function HomePage() {
           Bulls &amp; Cows
         </span>
         <button
-          onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+          onClick={toggleTheme}
           aria-label={theme === 'dark' ? '切换浅色模式' : '切换深色模式'}
           className="absolute right-6 w-9 h-9 flex items-center justify-center rounded-full
             transition-all duration-200 cursor-pointer hover:opacity-80"

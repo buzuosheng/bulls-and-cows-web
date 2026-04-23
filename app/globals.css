@@ -137,6 +137,18 @@ body {
   animation: fade-in 0.25s ease forwards;
 }
 
+/* ===== REDUCED MOTION ===== */
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-flip,
+  .animate-pop,
+  .animate-shake,
+  .animate-bounce-in,
+  .animate-fade-in {
+    animation: none !important;
+  }
+}
+
 /* ===== SCROLLBAR ===== */
 
 ::-webkit-scrollbar {

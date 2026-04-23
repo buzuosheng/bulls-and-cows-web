@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { ScoreInfo } from '../lib/game'
 import { GameStats } from '../lib/stats'
 
@@ -47,13 +48,24 @@ export default function ResultModal({
   const winRate = stats && stats.totalGames > 0
     ? Math.round((stats.wins / stats.totalGames) * 100)
     : 0
+  const dialogRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    dialogRef.current?.focus()
+  }, [])
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in"
       style={{ background: 'var(--bc-bg-overlay)' }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="游戏结果"
     >
       <div
-        className="rounded-xl p-6 mx-4 w-full max-w-sm text-center animate-bounce-in border"
+        ref={dialogRef}
+        tabIndex={-1}
+        className="rounded-xl p-6 mx-4 w-full max-w-sm text-center animate-bounce-in border outline-none"
         style={{
           background: 'var(--bc-card)',
           borderColor: 'var(--bc-border)',
@@ -141,6 +153,14 @@ export default function ResultModal({
                 <p className="text-xs" style={{ color: 'var(--bc-text-muted)' }}>最佳步数</p>
               </div>
             </div>
+          )}
+          {attempts > 5 && (
+            <p
+              className="text-xs mt-4 pt-3 border-t"
+              style={{ color: 'var(--bc-text-muted)', borderColor: 'var(--bc-border)' }}
+            >
+              试试辅助计数器和行对比，下次更快猜中 💡
+            </p>
           )}
         </div>
 

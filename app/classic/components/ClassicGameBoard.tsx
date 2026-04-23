@@ -1,7 +1,6 @@
 'use client'
 
-import Link from 'next/link'
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import { useCallback, useEffect, useReducer, useState } from 'react'
 import {
   checkGuessClassic,
   generateSecret,
@@ -9,17 +8,18 @@ import {
   isValidGuess,
   type ClassicGuessResult,
 } from '../../lib/game'
-import { type GameStats, loadStats, recordLoss, recordWin } from '../../lib/stats'
+import { useEliminator } from '../../hooks/useEliminator'
+import { useGameStats } from '../../hooks/useGameStats'
 import { RotateCw } from 'lucide-react'
-import EliminatorPanel, { INIT_CELLS } from '../../components/EliminatorPanel'
+import EliminatorPanel from '../../components/EliminatorPanel'
 import Fireworks from '../../components/Fireworks'
+import GameShell from '../../components/GameShell'
 import NumberPad from '../../components/NumberPad'
+import OnboardingModal from '../../components/OnboardingModal'
 import ResultModal from '../../components/ResultModal'
 import ClassicDiffPanel from './ClassicDiffPanel'
 import ClassicGuessRow from './ClassicGuessRow'
 import ClassicHelpPanel from './ClassicHelpPanel'
-
-type Theme = 'dark' | 'light'
 
 interface GameState {
   secret: string[]
@@ -62,7 +62,6 @@ function reducer(state: GameState, action: Action): GameState {
       const result = action.result
       const newGuesses = [...state.guesses, result]
       const won = result.bulls === 4
-      // 仅猜对时设置 revealingRow，用于翻转动画；错误猜测无翻转，不锁键盘
       return {
         ...state,
         guesses: newGuesses,
@@ -84,46 +83,15 @@ function reducer(state: GameState, action: Action): GameState {
 
 export default function ClassicGameBoard() {
   const [state, dispatch] = useReducer(reducer, undefined, createInitialState)
-  const [showHelp, setShowHelp] = useState(false)
   const [shakingRow, setShakingRow] = useState<number | null>(null)
   const [showResult, setShowResult] = useState(false)
   const [showFireworks, setShowFireworks] = useState(false)
-  const [theme, setTheme] = useState<Theme>('light')
-  const [showEliminator, setShowEliminator] = useState(false)
-  const [elimCells, setElimCells] = useState<number[][]>(INIT_CELLS)
   const [selectedRows, setSelectedRows] = useState<number[]>([])
-  const [isTouchDevice, setIsTouchDevice] = useState(false)
-  const [stats, setStats] = useState<GameStats | null>(null)
-  const [isNewBest, setIsNewBest] = useState(false)
-  const hasRecordedWin = useRef(false)
+
+  const { elimCells, showEliminator, setShowEliminator, handleCellClick, applyAutoElimination, resetEliminator } = useEliminator()
+  const { stats, isNewBest, recordWinResult, recordLossResult, resetGameStats } = useGameStats('classic')
 
   const { secret, guesses, currentInput, gameStatus, revealingRow } = state
-
-  // 触摸设备检测：手机/iPad 上不聚焦隐藏 input，避免弹出系统键盘
-  useEffect(() => {
-    const touch =
-      typeof window !== 'undefined' &&
-      ('ontouchstart' in window || window.matchMedia('(pointer: coarse)').matches)
-    setIsTouchDevice(!!touch)
-  }, [])
-
-  // 初始化时从 localStorage 读取主题
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('bc-theme')
-      if (saved === 'dark') setTheme('dark')
-    } catch { /* ignore */ }
-  }, [])
-
-  // 同步主题到 html 类 + localStorage
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-    try { localStorage.setItem('bc-theme', theme) } catch { /* ignore */ }
-  }, [theme])
 
   useEffect(() => {
     if (revealingRow === null) return
@@ -137,20 +105,14 @@ export default function ClassicGameBoard() {
   // 胜利后记录统计 + 放烟花 + 延迟弹出结果
   useEffect(() => {
     if (gameStatus === 'won' && revealingRow === null) {
-      if (!hasRecordedWin.current) {
-        hasRecordedWin.current = true
-        const prevBest = loadStats('classic').bestSteps
-        const updated = recordWin('classic', guesses.length)
-        setStats(updated)
-        setIsNewBest(prevBest === 0 || guesses.length < prevBest)
-      }
+      recordWinResult(guesses.length)
 
       setShowFireworks(true)
       const fw = setTimeout(() => setShowFireworks(false), 3500)
       const res = setTimeout(() => setShowResult(true), 600)
       return () => { clearTimeout(fw); clearTimeout(res) }
     }
-  }, [gameStatus, revealingRow, guesses.length])
+  }, [gameStatus, revealingRow, guesses.length, recordWinResult])
 
   const handleDigit = useCallback(
     (digit: string) => {
@@ -168,37 +130,20 @@ export default function ClassicGameBoard() {
       return
     }
     const result = checkGuessClassic(secret, currentInput)
-
-    // 自动排除逻辑（经典版）：
-    // bulls=0 且 cows=0 → 这4个数字均不在答案中，整行（4个位置）全部标灰
-    if (result.bulls === 0 && result.cows === 0) {
-      setElimCells((prev) => {
-        const next = prev.map((r) => [...r])
-        currentInput.forEach((digit) => {
-          const row = parseInt(digit)
-          for (let col = 0; col < 4; col++) {
-            if (next[row][col] === 0) next[row][col] = 1
-          }
-        })
-        return next
-      })
-    }
-
+    applyAutoElimination({ digits: currentInput, bulls: result.bulls, cows: result.cows }, 'classic')
     dispatch({ type: 'SUBMIT_GUESS', result })
-  }, [currentInput, guesses.length, secret])
+  }, [currentInput, guesses.length, secret, applyAutoElimination])
 
   const handleRestart = useCallback(() => {
     if (gameStatus === 'playing' && guesses.length > 0) {
-      recordLoss('classic')
+      recordLossResult()
     }
     setShowResult(false)
-    setElimCells(INIT_CELLS())
+    resetEliminator()
     setSelectedRows([])
-    setStats(null)
-    setIsNewBest(false)
-    hasRecordedWin.current = false
+    resetGameStats()
     dispatch({ type: 'RESTART' })
-  }, [gameStatus, guesses.length])
+  }, [gameStatus, guesses.length, recordLossResult, resetEliminator, resetGameStats])
 
   const handleRowSelect = useCallback((rowIndex: number) => {
     setSelectedRows((prev) => {
@@ -208,154 +153,20 @@ export default function ClassicGameBoard() {
     })
   }, [])
 
-  const handleElimCellClick = useCallback((row: number, col: number) => {
-    setElimCells((prev) => {
-      const next = prev.map((r) => [...r])
-      next[row][col] = (next[row][col] + 1) % 3
-      return next
-    })
-  }, [])
-
-  const toggleTheme = useCallback(() => {
-    setTheme((t) => (t === 'dark' ? 'light' : 'dark'))
-  }, [])
-
-  const hiddenInputRef = useRef<HTMLInputElement>(null)
-
-  // 挂载后聚焦隐藏 input（仅非触摸设备），Vimium 遇到 input 会自动放行键盘事件
-  useEffect(() => {
-    if (!isTouchDevice) hiddenInputRef.current?.focus()
-  }, [isTouchDevice])
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent | KeyboardEvent) => {
-      if (showHelp || showResult) return
-      if ('isComposing' in e && e.isComposing) return
-
-      if (/^Digit[0-9]$/.test(e.code)) {
-        e.preventDefault()
-        handleDigit(e.code.slice(5))
-      } else if (/^Numpad[0-9]$/.test(e.code)) {
-        e.preventDefault()
-        handleDigit(e.code.slice(6))
-      } else if (/^[0-9]$/.test(e.key)) {
-        e.preventDefault()
-        handleDigit(e.key)
-      } else if (e.code === 'Backspace' || e.key === 'Backspace') {
-        e.preventDefault()
-        handleDelete()
-      } else if (e.code === 'Enter' || e.code === 'NumpadEnter' || e.key === 'Enter') {
-        e.preventDefault()
-        handleEnter()
-      }
-    },
-    [showHelp, showResult, handleDigit, handleDelete, handleEnter],
-  )
-
   const isDisabled = gameStatus !== 'playing' || revealingRow !== null
   const currentRowIndex = guesses.length
 
   return (
-    <div
-      className="flex flex-col overflow-hidden relative"
-      onClick={() => {
-        if (!isTouchDevice) hiddenInputRef.current?.focus()
-      }}
+    <GameShell
+      title="经典版"
+      renderHelpPanel={(isOpen, onClose) => <ClassicHelpPanel isOpen={isOpen} onClose={onClose} />}
+      onDigit={handleDigit}
+      onDelete={handleDelete}
+      onEnter={handleEnter}
+      keyboardDisabled={showResult}
     >
-      <input
-        ref={hiddenInputRef}
-        onKeyDown={handleKeyDown}
-        onInput={(e) => { (e.target as HTMLInputElement).value = '' }}
-        style={{ position: 'fixed', opacity: 0, width: 0, height: 0, pointerEvents: 'none', top: 0, left: 0 }}
-        aria-hidden="true"
-        autoComplete="off"
-        autoCorrect="off"
-        autoCapitalize="off"
-        spellCheck={false}
-        tabIndex={-1}
-        readOnly
-        inputMode="none"
-      />
-
-      {/* ===== HEADER ===== */}
-      <header
-        className="relative z-10 flex items-center justify-between px-3 sm:px-4 py-3 max-w-lg mx-auto w-full"
-        style={{ borderBottom: '1px solid var(--bc-border)' }}
-      >
-        {/* 左：返回首页 + ? 帮助 */}
-        <div className="flex items-center gap-1">
-          <Link
-            href="/"
-            aria-label="返回首页"
-            className="w-9 h-9 flex items-center justify-center rounded-full
-              transition-all duration-200 cursor-pointer select-none hover:opacity-80"
-            style={{ color: 'var(--bc-text-muted)' }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </Link>
-          <button
-            onClick={() => setShowHelp((v) => !v)}
-            aria-label="游戏规则"
-            aria-expanded={showHelp}
-            className="w-9 h-9 flex items-center justify-center rounded-full
-              transition-all duration-200 cursor-pointer select-none hover:opacity-80"
-            style={{ color: showHelp ? '#538d4e' : 'var(--bc-text-muted)' }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-          </button>
-        </div>
-
-        {/* 中：标题 */}
-        <h1
-          className="text-xl font-bold tracking-widest select-none"
-          style={{ color: 'var(--bc-text)' }}
-        >
-          经典版
-        </h1>
-
-        {/* 右：主题切换 */}
-        <button
-            onClick={toggleTheme}
-            aria-label={theme === 'dark' ? '切换浅色模式' : '切换深色模式'}
-            className="w-9 h-9 flex items-center justify-center rounded-full
-              transition-all duration-200 cursor-pointer select-none hover:opacity-80"
-            style={{ color: 'var(--bc-text-muted)' }}
-          >
-            {theme === 'dark' ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="5" />
-                <line x1="12" y1="1" x2="12" y2="3" />
-                <line x1="12" y1="21" x2="12" y2="23" />
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                <line x1="1" y1="12" x2="3" y2="12" />
-                <line x1="21" y1="12" x2="23" y2="12" />
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
-            )}
-        </button>
-      </header>
-
-      {/* ===== 全屏帮助面板 ===== */}
-      <ClassicHelpPanel isOpen={showHelp} onClose={() => setShowHelp(false)} />
-
       {/* ===== 游戏区域 ===== */}
-      <main className="flex flex-col items-center px-3 sm:px-4 pt-4 sm:pt-6 pb-2 gap-2">
+      <main className="flex flex-col items-center px-3 sm:px-4 pt-4 sm:pt-6 pb-2 gap-2" role="list" aria-label="猜测历史">
         {guesses.map((guess, rowIndex) => {
           const selOrder = selectedRows.indexOf(rowIndex)
           const borderColor = selOrder === 0 ? '#f97316' : selOrder === 1 ? '#818cf8' : 'transparent'
@@ -413,7 +224,6 @@ export default function ClassicGameBoard() {
           disabled={isDisabled}
         />
 
-        {/* 重新开始 + 辅助计数器：一行排列，水平居中 */}
         <div className="flex flex-row items-center justify-center gap-4">
           <button
             onClick={handleRestart}
@@ -447,8 +257,8 @@ export default function ClassicGameBoard() {
         isOpen={showEliminator}
         onClose={() => setShowEliminator(false)}
         cells={elimCells}
-        onCellClick={handleElimCellClick}
-        onReset={() => setElimCells(INIT_CELLS())}
+        onCellClick={handleCellClick}
+        onReset={resetEliminator}
       />
 
       {/* ===== 烟花庆祝 ===== */}
@@ -465,6 +275,9 @@ export default function ClassicGameBoard() {
           onRestart={handleRestart}
         />
       )}
-    </div>
+
+      {/* ===== 新手引导 ===== */}
+      <OnboardingModal mode="classic" />
+    </GameShell>
   )
 }
