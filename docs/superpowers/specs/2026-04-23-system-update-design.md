@@ -1,7 +1,8 @@
 # Bulls & Cows Web 系统更新规划
 
 > 日期：2026-04-23
-> 状态：已批准
+> 完成日期：2026-04-24
+> 状态：✅ 已完成（三个阶段全部交付）
 
 ## 背景
 
@@ -101,9 +102,9 @@
 
 ### 验收标准
 
-- 两种模式功能行为与重构前完全一致
-- `GameBoard.tsx` 和 `ClassicGameBoard.tsx` 行数各减少 30% 以上
-- `npm run build` 通过，无类型错误
+- ✅ 两种模式功能行为与重构前完全一致
+- ✅ `GameBoard.tsx` 和 `ClassicGameBoard.tsx` 行数各减少 30% 以上
+- ✅ `npm run build` 通过，无类型错误
 
 ---
 
@@ -145,10 +146,10 @@
 
 ### 验收标准
 
-- `/abc` 等无效路由显示 404 页面
-- 各页面 `<head>` 中包含正确的 title、description、og 标签
-- 结果弹窗展示统计摘要
-- README 包含完整的项目说明
+- ✅ `/abc` 等无效路由显示 404 页面
+- ✅ 各页面 `<head>` 中包含正确的 title、description、og 标签
+- ✅ 结果弹窗展示统计摘要
+- ✅ README 包含完整的项目说明
 
 ---
 
@@ -198,8 +199,8 @@
 
 ### 验收标准
 
-- Tab 键可在弹窗内循环，Esc 可关闭
-- `prefers-reduced-motion` 开启时无动画
-- 屏幕阅读器可识别所有交互区域
-- 首次进入弹出引导，再次进入不弹出
-- `npx playwright test` 通过
+- ✅ Tab 键可在弹窗内循环，Esc 可关闭
+- ✅ `prefers-reduced-motion` 开启时无动画
+- ✅ 屏幕阅读器可识别所有交互区域
+- ✅ 首次进入弹出引导，再次进入不弹出
+- ✅ `npx playwright test` 通过（6 个用例全部通过）
